@@ -1,0 +1,23 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jnvst-guru-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: jnvst_guru_backend
+      POSTGRES_USER: jnvst_guru
+      POSTGRES_PASSWORD: jnvst_guru_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jnvst_guru -d jnvst_guru_backend"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
