@@ -1,6 +1,11 @@
 # Architecture
 
-Status: Implemented foundation; question-bank modules remain planned.
+## Update log
+- 2026-08-30: Added documentation cross-references and clarified the current architecture status and planned module boundaries.
+- 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
+- 2026-08-30: Updated the backend implementation plan to AUTHENTICATION OPTION A: Android handles Supabase Auth; Spring Boot validates the Supabase JWT as a resource server and manages only application/business data.
+
+Status: Implemented foundation; Flyway V1 and V2 are applied successfully; next implementation phase is secure JWT resource-server access with Supabase Auth as the identity provider.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -41,6 +46,163 @@ The upcoming structure may include:
 - `config` for application configuration
 
 ## Current constraints
-- No authentication or authorization implementation yet.
+- Authentication is intentionally externalized to Supabase Auth; this backend does not implement password authentication itself.
+- The next implementation phase is Spring Security as a JWT Resource Server.
 - No question-bank schema has been created yet.
-- No event-driven or cloud-specific infrastructure is included.
+- No event-driven or cloud-specific infrastructure is included beyond the Supabase authentication boundary.
+
+## Authentication boundary
+JNVST GURU uses Supabase Auth as the identity provider for application users. The backend application database stores only the local application record needed to associate the authenticated account with roles, profile data, subscriptions, and educational content.
+
+The application data model keeps authentication separate from profile and business data:
+- `auth.users` is managed by Supabase Auth
+- `application.users.auth_user_id` maps the application user record to the Supabase authenticated identity
+- `application.users` stores only the application-side status and linkage data
+- `application.roles`, `application.user_roles`, `application.student_profiles`, and `application.subscriptions` remain application-domain tables
+- `application.users.status` is an application state such as ACTIVE or INACTIVE, not a subscription plan label
+
+This architecture keeps credential handling outside PostgreSQL and preserves a clean separation between identity, profile, and business logic.
+
+## Authentication Option A: Supabase Auth on Android + Spring Boot JWT resource server
+This is the approved authentication pattern for the backend implementation.
+
+```text
+Android App
+    |
+    | Supabase Auth
+    | phone + password
+    v
+Supabase Auth (auth.users)
+    |
+    | JWT access token
+    v
+Android App
+    |
+    | Authorization: Bearer <JWT>
+    v
+Spring Boot Backend
+    |
+    v
+Supabase PostgreSQL
+    |
+    +-- application.*
+```
+
+### Required behavior
+1. The Android app communicates directly with Supabase Auth for registration, login, logout, session management, and token refresh.
+2. Spring Boot does not implement login/password authentication.
+3. Spring Boot does not receive or store user passwords.
+4. Spring Boot does not store password, password_hash, or Supabase refresh tokens.
+5. The Android app sends the JWT access token to protected backend APIs using the standard header:
+   - `Authorization: Bearer <access_token>`
+6. Spring Boot validates the Supabase JWT before allowing access to protected APIs.
+7. The JWT subject (`sub`) represents the Supabase `auth.users.id`.
+8. The backend uses the JWT subject to identify the matching `application.users.auth_user_id` record.
+9. If the application user record is missing, the backend provisions it when appropriate after a valid authenticated request.
+10. Newly registered normal users receive the `STUDENT` role according to the database design.
+11. The backend remains responsible for all application and business logic.
+
+The Android app must not directly access:
+- `application.users`
+- `application.roles`
+- `application.user_roles`
+- `application.student_profiles`
+- `application.subscription_plans`
+- `application.subscriptions`
+- future question tables
+- future practice tables
+- PostgreSQL directly
+
+Only the Spring Boot backend accesses application data.
+
+### Security implementation rules
+- Use Spring Security as a JWT Resource Server.
+- Extract the Bearer token from the request.
+- Validate the token signature.
+- Validate the issuer.
+- Validate expiration.
+- Identify the authenticated Supabase user from `sub`.
+- Build an authenticated principal for downstream access checks.
+- Enforce authorization based on application roles.
+- Do not create a custom JWT generation system.
+- Do not generate our own login tokens.
+- Do not use the Supabase service-role key in the Android app.
+- Keep Supabase service credentials only on the backend if required for server-side operations.
+
+## Database schema boundary
+The application schema is managed separately from Supabase's `auth` schema. The backend should not create authentication tables inside the application database beyond the `application.users` record that references `auth.users.id`.
+
+The intended schema layout is:
+- `auth` — managed by Supabase Auth
+- `application` — managed by Flyway for all application tables
+
+This keeps the system aligned with the provider-owned authentication model and avoids storing credentials in the application database.
+
+## Subscription model boundary
+Subscription plans and subscription history are application-domain data, not authentication data.
+
+- `application.subscription_plans` contains plan definitions: `FREE`, `PREMIUM_MONTHLY`, and `PREMIUM_YEARLY`
+- `application.subscriptions` stores historical subscription records for a user
+- `FREE` is a plan code, not a subscription status value
+- `FREE` subscriptions may have `status = ACTIVE` and `end_at = NULL`
+- `application.users.is_premium` is not added and should not be used
+
+## Backend implementation plan (next phase)
+The implementation phase that follows the completed database foundation is restricted to the following scope.
+
+### In scope
+1. Spring Security configuration
+2. Supabase JWT validation
+3. Authenticated principal handling
+4. User provisioning and lookup
+5. Role and authority handling
+6. `GET /api/v1/me`
+7. Student profile APIs
+8. Subscription read APIs
+9. Global exception handling
+10. Validation
+11. CORS configuration
+12. Health endpoint
+13. Secure configuration and environment variables
+14. Appropriate tests
+
+### Out of scope for now
+- questions
+- options
+- passages
+- translations
+- question media
+- practice
+- mock tests
+- progress tracking
+- payments
+- notifications
+- admin question management
+- teacher question management
+
+### Database rules for the implementation phase
+- Do not modify V1 or V2.
+- Do not manually modify the production database.
+- Any future database change must use a new Flyway migration.
+- Do not create a migration unless the current implementation genuinely requires one.
+
+### Runtime and configuration requirements
+Use environment variables for:
+- database credentials
+- Supabase URL
+- JWT issuer/JWKS configuration as required
+
+Never hard-code secrets. Never commit secrets to Git.
+
+### Validation expectations after implementation
+- compile the project
+- run tests
+- verify Flyway sees V1/V2 as already applied
+- verify protected APIs reject missing or invalid JWTs
+- verify valid Supabase JWT authentication works
+- verify the JWT `sub` maps to `application.users.auth_user_id`
+- verify `STUDENT`/`TEACHER`/`ADMIN` authorization structure
+- verify no passwords or tokens are persisted
+- verify no secrets are committed
+
+No code is being deployed as part of this plan update; this is the approved architecture and implementation scope for the next backend work.

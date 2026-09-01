@@ -1,5 +1,8 @@
 # JNVST GURU Backend
 
+## Update log
+- 2026-08-30: Expanded project overview, clarified local setup steps, and added cross-links to the documentation set so the backend status and onboarding notes stay easy to track.
+
 Status: Backend foundation is implemented and validated, with a minimal health-check API and clear documentation for local setup.
 
 ## Overview
@@ -45,6 +48,7 @@ export DB_PASSWORD=jnvst_guru_password
 
 ## Documentation map
 - [docs/HELP.md](docs/HELP.md) — onboarding guide and local setup instructions
+- [docs/CHANGELOG.md](docs/CHANGELOG.md) — documentation change log and milestone tracking
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — architectural direction and boundaries
 - [docs/API.md](docs/API.md) — API contract and endpoint planning
 - [docs/DATABASE.md](docs/DATABASE.md) — database direction and schema planning

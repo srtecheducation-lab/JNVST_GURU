@@ -1,5 +1,8 @@
 # API
 
+## Update log
+- 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
+
 Status: Foundation API complete; no business-domain endpoints added yet.
 
 ## Related documentation

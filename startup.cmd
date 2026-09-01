@@ -7,45 +7,31 @@ set "DATABASE_ENABLED=false"
 
 cd /d "%~dp0"
 
+echo [STARTUP] Using single application.properties configuration for the real database.
+if exist "local.properties" (
+    echo [STARTUP] local.properties found at "%cd%\local.properties"
+) else (
+    echo [STARTUP] local.properties not found in "%cd%"
+)
+
 if "%1"=="start" goto start_app
 if "%1"=="status" goto status_app
 if "%1"=="stop" goto stop_app
 if "%1"=="" goto start_app
 
 echo Usage:
-	echo   startup.cmd start   - start PostgreSQL and the backend
+	echo   startup.cmd start   - start the backend
 	echo   startup.cmd status  - check if the app is running
-	echo   startup.cmd stop    - stop the app and PostgreSQL container
+	echo   startup.cmd stop    - stop the backend
 exit /b 1
-
+ 
 :start_app
-if "%DATABASE_ENABLED%"=="true" (
-    where docker >nul 2>nul
-    if %ERRORLEVEL% NEQ 0 (
-        echo Docker not found in PATH. PostgreSQL container startup will be skipped.
-        echo If Docker is installed but not on PATH, add it and re-run this script.
-        goto run_app
-    )
-
-    echo Starting PostgreSQL via Docker Compose...
-    docker compose up -d postgres
-    if %ERRORLEVEL% NEQ 0 (
-        echo Failed to start PostgreSQL using Docker Compose.
-        echo Continuing without PostgreSQL startup. Make sure PostgreSQL is available and configured.
-        goto run_app
-    )
-) else (
-    echo DATABASE_ENABLED=false; skipping PostgreSQL startup.
-    echo The backend will start with the in-memory test database profile.
-)
-
+echo [STARTUP] Starting JNVST GURU backend using the single application.properties configuration.
+goto run_app
+ 
 :run_app
 echo Starting JNVST GURU backend...
-if "%DATABASE_ENABLED%"=="true" (
-    call .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
-) else (
-    call .\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=test
-)
+call .\mvnw.cmd spring-boot:run
 exit /b %ERRORLEVEL%
 
 :status_app
@@ -60,17 +46,7 @@ if defined PID (
     echo JNVST GURU backend is not running on port 8080.
 )
 
-if "%DATABASE_ENABLED%"=="true" (
-    where docker >nul 2>nul
-    if %ERRORLEVEL% EQU 0 (
-        docker ps --format "table {{.Names}}\t{{.Status}}" | findstr /I "jnvst-guru-postgres"
-        if %ERRORLEVEL% NEQ 0 (
-            echo PostgreSQL container is not running.
-        )
-    )
-) else (
-    echo DATABASE_ENABLED=false; PostgreSQL is intentionally disabled.
-)
+echo [STARTUP] Using external database from application.properties/local.properties.
 exit /b 0
 
 :stop_app
@@ -85,17 +61,7 @@ if defined PID (
     echo No backend process found on port 8080.
 )
 
-if "%DATABASE_ENABLED%"=="true" (
-    where docker >nul 2>nul
-    if %ERRORLEVEL% EQU 0 (
-        echo Stopping PostgreSQL container...
-        docker compose down
-    ) else (
-        echo Docker not found; PostgreSQL container was not stopped.
-    )
-) else (
-    echo DATABASE_ENABLED=false; PostgreSQL was not started by the script.
-)
+echo [STARTUP] No local PostgreSQL container is managed by this script; the app uses the configured external database.
 exit /b 0
 
 endlocal

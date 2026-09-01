@@ -1,5 +1,8 @@
 # Development
 
+## Update log
+- 2026-08-30: Added setup references and development workflow notes to keep local environment instructions aligned with the current backend foundation.
+
 Status: Foundation setup is in progress and verified with Java 25 + Maven Wrapper.
 
 ## Related documentation
