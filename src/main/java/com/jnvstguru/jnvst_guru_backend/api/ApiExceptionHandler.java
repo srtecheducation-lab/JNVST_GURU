@@ -1,5 +1,6 @@
 package com.jnvstguru.jnvst_guru_backend.api;
 
+import com.jnvstguru.jnvst_guru_backend.service.StudentProfileAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -42,6 +43,18 @@ public class ApiExceptionHandler {
         error.put("error", "Constraint violation");
         error.put("message", ex.getMessage());
         return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(StudentProfileAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleStudentProfileAlreadyExists(StudentProfileAlreadyExistsException ex, HttpServletRequest request) {
+        String path = request.getRequestURI();
+        log.warn("[STUDENT_PROFILE] Duplicate profile conflict for path={} message={}", path, ex.getMessage());
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", OffsetDateTime.now());
+        error.put("status", HttpStatus.CONFLICT.value());
+        error.put("error", "Conflict");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

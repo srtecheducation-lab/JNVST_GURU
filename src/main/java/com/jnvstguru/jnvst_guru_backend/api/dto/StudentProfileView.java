@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 public record StudentProfileView(
         Long id,
         String name,
-        String classLevel,
+        Integer classLevel,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt
 ) {

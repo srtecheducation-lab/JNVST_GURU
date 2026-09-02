@@ -1,23 +1,32 @@
 package com.jnvstguru.jnvst_guru_backend.service;
 
+import com.jnvstguru.jnvst_guru_backend.api.dto.StudentProfileRequest;
+import com.jnvstguru.jnvst_guru_backend.domain.DistrictEntity;
+import com.jnvstguru.jnvst_guru_backend.domain.ExamSessionEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.RoleEntity;
+import com.jnvstguru.jnvst_guru_backend.domain.StateEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.StudentProfileEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.SubscriptionEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.UserEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.UserRoleEntity;
+import com.jnvstguru.jnvst_guru_backend.repository.DistrictRepository;
+import com.jnvstguru.jnvst_guru_backend.repository.ExamSessionRepository;
 import com.jnvstguru.jnvst_guru_backend.repository.RoleRepository;
+import com.jnvstguru.jnvst_guru_backend.repository.StateRepository;
 import com.jnvstguru.jnvst_guru_backend.repository.StudentProfileRepository;
 import com.jnvstguru.jnvst_guru_backend.repository.SubscriptionRepository;
 import com.jnvstguru.jnvst_guru_backend.repository.UserRepository;
 import com.jnvstguru.jnvst_guru_backend.repository.UserRoleRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -28,6 +37,9 @@ public class ApplicationUserService {
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
     private final StudentProfileRepository studentProfileRepository;
+    private final ExamSessionRepository examSessionRepository;
+    private final StateRepository stateRepository;
+    private final DistrictRepository districtRepository;
     private final SubscriptionRepository subscriptionRepository;
 
     public ApplicationUserService(
@@ -35,11 +47,17 @@ public class ApplicationUserService {
             RoleRepository roleRepository,
             UserRoleRepository userRoleRepository,
             StudentProfileRepository studentProfileRepository,
+            ExamSessionRepository examSessionRepository,
+            StateRepository stateRepository,
+            DistrictRepository districtRepository,
             SubscriptionRepository subscriptionRepository) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.userRoleRepository = userRoleRepository;
         this.studentProfileRepository = studentProfileRepository;
+        this.examSessionRepository = examSessionRepository;
+        this.stateRepository = stateRepository;
+        this.districtRepository = districtRepository;
         this.subscriptionRepository = subscriptionRepository;
     }
 
@@ -107,8 +125,32 @@ public class ApplicationUserService {
             log.info("[STUDENT_PROFILE] No profile found for userId={}", user.getId());
         } else {
             log.info("[STUDENT_PROFILE] Profile found for userId={}: profileId={}", user.getId(), profile.getId());
+            log.debug("[STUDENT_PROFILE] Loaded related stateId={}, districtId={}, examSessionId={}",
+                    profile.getState() != null ? profile.getState().getId() : null,
+                    profile.getDistrict() != null ? profile.getDistrict().getId() : null,
+                    profile.getExamSession() != null ? profile.getExamSession().getId() : null);
         }
         return profile;
+    }
+
+    @Transactional(readOnly = true)
+    public List<StateEntity> getActiveStates() {
+        return stateRepository.findByStatusOrderByNameAsc("ACTIVE");
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<StateEntity> getStateById(Long stateId) {
+        return stateRepository.findByIdAndStatus(stateId, "ACTIVE");
+    }
+
+    @Transactional(readOnly = true)
+    public List<DistrictEntity> getActiveDistrictsByState(StateEntity state) {
+        return districtRepository.findByStateAndStatusOrderByNameAsc(state, "ACTIVE");
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<DistrictEntity> getDistrictById(Long districtId) {
+        return districtRepository.findByIdAndStatus(districtId, "ACTIVE");
     }
 
     @Transactional(readOnly = true)
@@ -118,20 +160,49 @@ public class ApplicationUserService {
     }
 
     @Transactional
-    public StudentProfileEntity createStudentProfile(UserEntity user, String name, String classLevel) {
+    public StudentProfileEntity createStudentProfile(UserEntity user, StudentProfileRequest request) {
         log.info("[STUDENT_PROFILE] Creating profile for userId={}", user.getId());
         if (studentProfileRepository.findByUser(user).isPresent()) {
             log.warn("[STUDENT_PROFILE] Student profile already exists for userId={}", user.getId());
-            throw new IllegalArgumentException("Student profile already exists for this user.");
+            throw new StudentProfileAlreadyExistsException();
         }
+
+        StateEntity state = stateRepository.findByIdAndStatus(request.stateId(), "ACTIVE")
+                .orElseThrow(() -> new IllegalArgumentException("Invalid state id=" + request.stateId()));
+
+        DistrictEntity district = districtRepository.findByIdAndStatus(request.districtId(), "ACTIVE")
+                .orElseThrow(() -> new IllegalArgumentException("Invalid district id=" + request.districtId()));
+
+        if (!district.getState().getId().equals(state.getId())) {
+            log.warn("[STUDENT_PROFILE] Invalid district/state combination: stateId={} districtId={} districtStateId={}",
+                    state.getId(), district.getId(), district.getState().getId());
+            throw new IllegalArgumentException("District does not belong to selected state");
+        }
+
+        ExamSessionEntity examSession = examSessionRepository.findById(request.examSessionId())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid exam session id=" + request.examSessionId()));
 
         StudentProfileEntity profile = new StudentProfileEntity();
         profile.setUser(user);
-        profile.setName(Objects.requireNonNull(name, "name must not be null").trim());
-        profile.setClassLevel(classLevel == null ? null : classLevel.trim());
-        StudentProfileEntity savedProfile = studentProfileRepository.save(profile);
-        log.info("[STUDENT_PROFILE] Profile created for userId={}: profileId={}", user.getId(), savedProfile.getId());
-        return savedProfile;
+        profile.setName(Objects.requireNonNull(request.name(), "name must not be null").trim());
+        profile.setDateOfBirth(request.dateOfBirth());
+        profile.setGender(request.gender());
+        profile.setCategory(request.category());
+        profile.setResidentialArea(request.residentialArea());
+        profile.setClassLevel(request.classLevel());
+        profile.setState(state);
+        profile.setDistrict(district);
+        profile.setPreferredLanguage(request.preferredLanguage().trim());
+        profile.setExamSession(examSession);
+
+        try {
+            StudentProfileEntity savedProfile = studentProfileRepository.save(profile);
+            log.info("[STUDENT_PROFILE] Profile created for userId={}: profileId={}", user.getId(), savedProfile.getId());
+            return savedProfile;
+        } catch (DataIntegrityViolationException ex) {
+            log.warn("[STUDENT_PROFILE] Duplicate profile detected for userId={} during create", user.getId());
+            throw new StudentProfileAlreadyExistsException();
+        }
     }
 
     @Transactional(readOnly = true)

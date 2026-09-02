@@ -1,9 +1,10 @@
 # JNVST GURU Backend
 
 ## Update log
+- 2026-09-02: Resolved the Supabase JWT validation path, cleaned up the configuration to a single real DB/auth setup, and validated the protected `/api/v1/me` flow with a live Supabase token.
 - 2026-08-30: Expanded project overview, clarified local setup steps, and added cross-links to the documentation set so the backend status and onboarding notes stay easy to track.
 
-Status: Backend foundation is implemented and validated, with a minimal health-check API and clear documentation for local setup.
+Status: Backend foundation is implemented and validated, with a secure Supabase JWT resource-server setup, a working `/api/v1/me` endpoint, and clear documentation for local setup.
 
 ## Overview
 JNVST GURU backend is the server-side foundation for the JNVST GURU educational platform. The repository is intentionally structured as a clean Spring Boot foundation so additional learning, assessment, and student-tracking modules can be added without reworking the platform architecture later.
@@ -13,7 +14,9 @@ The current scope is intentionally limited. It establishes the base application 
 ## Current implementation
 - Java 25 + Spring Boot application scaffold
 - Maven Wrapper-based build setup
-- PostgreSQL-ready environment configuration
+- PostgreSQL + Supabase-ready environment configuration
+- Spring Security JWT resource server using Supabase Auth
+- Protected user endpoint: `GET /api/v1/me`
 - Minimal REST health endpoint: `GET /api/v1/health`
 - Automated application and endpoint tests
 - Documentation structure under the `docs/` folder
@@ -57,11 +60,16 @@ export DB_PASSWORD=jnvst_guru_password
 
 ## Current API
 - Health endpoint: `GET /api/v1/health`
+- Authenticated current-user endpoint: `GET /api/v1/me`
+  - Requires `Authorization: Bearer <supabase-access-token>`
+  - Returns the authenticated user record and profile information for the matching app user
 
 ## Important notes
-- Authentication and authorization are not yet implemented.
+- Supabase Auth is the external identity provider.
+- Spring Boot validates Supabase-issued JWTs as a resource server.
+- The backend uses the JWT subject to map to the application user and role records.
 - The question-bank schema is still planned.
-- This project is intentionally kept simple while the foundation remains under active development.
+- The project remains intentionally modular while the core application and auth flow stabilize.
 
 ## Repository status
 This repository is in the foundation stage and should be updated whenever a significant milestone is reached. Documentation is intentionally kept in the `docs/` folder so the implementation, architecture, and operational guidance stay consistent.

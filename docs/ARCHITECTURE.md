@@ -1,11 +1,12 @@
 # Architecture
 
 ## Update log
+- 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
 - 2026-08-30: Added documentation cross-references and clarified the current architecture status and planned module boundaries.
 - 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
 - 2026-08-30: Updated the backend implementation plan to AUTHENTICATION OPTION A: Android handles Supabase Auth; Spring Boot validates the Supabase JWT as a resource server and manages only application/business data.
 
-Status: Implemented foundation; Flyway V1 and V2 are applied successfully; next implementation phase is secure JWT resource-server access with Supabase Auth as the identity provider.
+Status: Implemented foundation and active JWT resource-server access. Flyway V1 and V2 are applied successfully, and the backend now validates live Supabase tokens for protected endpoints including `/api/v1/me`.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -28,6 +29,8 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 ## Current implementation
 - The app is launched from `JnvstGuruBackendApplication`.
 - A health endpoint is exposed at `/api/v1/health`.
+- Spring Security acts as a JWT resource server validated against the Supabase issuer and JWKS.
+- A protected current-user endpoint is exposed at `/api/v1/me`.
 - The project is intentionally minimal and avoids premature abstractions.
 
 ## Architectural principles

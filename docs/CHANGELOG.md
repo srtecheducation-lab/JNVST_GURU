@@ -2,6 +2,13 @@
 
 This file records the documentation updates made while building the JNVST GURU backend foundation. Every significant change should be reflected here and in the relevant project markdown file.
 
+## 2026-09-02
+- Verified the working Supabase JWT flow with a real access token and confirmed the `/api/v1/me` endpoint returns the authenticated current user.
+- Simplified the backend configuration to a single real database and Supabase JWT setup instead of alternating between H2/test and real DB modes.
+- Confirmed the app loads `local.properties` through `spring.config.import` and validates Supabase access tokens using the configured issuer and JWKS URL.
+- Added request and auth troubleshooting logs, then removed the debug noise once the real JWT flow was validated.
+- Updated the documentation set to reflect the live authentication implementation and current API contract.
+
 ## 2026-08-30
 - Created a descriptive onboarding guide in [HELP.md](HELP.md) and moved the generated help content into the docs folder.
 - Expanded [README.md](../README.md) with a clearer project overview, quick-start steps, and documentation map.
