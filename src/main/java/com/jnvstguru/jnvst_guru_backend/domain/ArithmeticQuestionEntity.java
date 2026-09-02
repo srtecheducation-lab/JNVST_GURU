@@ -5,8 +5,12 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Transient;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -18,8 +22,13 @@ import java.time.ZoneOffset;
 @Table(name = "arithmetic_questions", schema = "application")
 public class ArithmeticQuestionEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "question_id")
+    private Long questionId;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @MapsId
+    @JoinColumn(name = "question_id", referencedColumnName = "id")
+    private QuestionEntity question;
 
     @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
     private String questionText;
@@ -50,8 +59,7 @@ public class ArithmeticQuestionEntity {
     @Column(columnDefinition = "TEXT")
     private String explanation;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Transient
     private ArithmeticQuestionEnums.Status status;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -73,11 +81,27 @@ public class ArithmeticQuestionEntity {
     }
 
     public Long getId() {
-        return id;
+        return questionId;
     }
 
     public void setId(Long id) {
-        this.id = id;
+        this.questionId = id;
+    }
+
+    public Long getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(Long questionId) {
+        this.questionId = questionId;
+    }
+
+    public QuestionEntity getQuestion() {
+        return question;
+    }
+
+    public void setQuestion(QuestionEntity question) {
+        this.question = question;
     }
 
     public String getQuestionText() {

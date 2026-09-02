@@ -1,6 +1,8 @@
 package com.jnvstguru.jnvst_guru_backend.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -32,8 +34,9 @@ public class MatQuestionEntity {
     @Column(name = "correct_option", nullable = false, length = 1)
     private String correctOption;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private String difficulty;
+    private Difficulty difficulty;
 
     @Column(columnDefinition = "TEXT")
     private String explanation;
@@ -88,11 +91,11 @@ public class MatQuestionEntity {
         this.correctOption = correctOption;
     }
 
-    public String getDifficulty() {
+    public Difficulty getDifficulty() {
         return difficulty;
     }
 
-    public void setDifficulty(String difficulty) {
+    public void setDifficulty(Difficulty difficulty) {
         this.difficulty = difficulty;
     }
 

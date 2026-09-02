@@ -2,6 +2,7 @@
 
 ## Update log
 - 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
+- 2026-09-02: Added the JPA/domain mapping status for the finalized question-bank entities and shared-primary-key relationships; no schema or migration changes were made.
 - 2026-08-30: Replaced the placeholder DB notes with the complete PostgreSQL schema design, ER relationship overview, and migration-readiness review for the upcoming Flyway work.
 - 2026-08-30: Finalized the approved auth/user/subscription design and executed the foundation Flyway migration set against the Supabase database. The migration history is recorded in Flyway while the application tables remain defined under the `application` schema.
 
@@ -28,7 +29,7 @@ The following Flyway migrations are present in the repository and have been appl
 | V6 | MAT questions, language passages, and language questions |
 | V7 | Papers and paper-question mappings |
 
-The applied schema is authoritative for the current backend. The broader tables later in this document (subjects, topics, practice, mock tests, media, and payments) remain design/planning material unless listed above.
+The applied schema is authoritative for the current backend. JPA entity mappings now cover the seven question-bank tables listed above. The broader tables later in this document (subjects, topics, practice, mock tests, media, and payments) remain design/planning material unless listed above.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
