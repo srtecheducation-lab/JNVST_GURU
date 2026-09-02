@@ -7,7 +7,11 @@ This file records the documentation updates made while building the JNVST GURU b
 - Simplified the backend configuration to a single real database and Supabase JWT setup instead of alternating between H2/test and real DB modes.
 - Confirmed the app loads `local.properties` through `spring.config.import` and validates Supabase access tokens using the configured issuer and JWKS URL.
 - Added request and auth troubleshooting logs, then removed the debug noise once the real JWT flow was validated.
-- Updated the documentation set to reflect the live authentication implementation and current API contract.
+- Finished the Student Profile API work: 201 Created on create, duplicate-profile conflict handling, and strict JWT-sub-based user resolution.
+- Implemented normalized State/District master data and added the `stateId` / `districtId` contract for student profiles.
+- Fixed the LazyInitializationException in the profile GET path by fetching required relations within the transactional service layer.
+- Added the initial Arithmetic Question Bank backend with CRUD, filtering, and status-based soft-delete handling.
+- Updated the documentation set to reflect the live authentication, profile, reference-data, and arithmetic API contract.
 
 ## 2026-08-30
 - Created a descriptive onboarding guide in [HELP.md](HELP.md) and moved the generated help content into the docs folder.

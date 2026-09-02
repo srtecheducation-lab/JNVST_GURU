@@ -1,10 +1,11 @@
 # JNVST GURU Backend
 
 ## Update log
-- 2026-09-02: Resolved the Supabase JWT validation path, cleaned up the configuration to a single real DB/auth setup, and validated the protected `/api/v1/me` flow with a live Supabase token.
+- 2026-09-02: Verified the working Supabase JWT flow, completed the Student Profile and reference-data APIs, and added the initial Arithmetic Question Bank backend.
+- 2026-09-02: Updated the docs to reflect the live Student Profile contract, state/district normalization, and arithmetic CRUD/filter endpoints.
 - 2026-08-30: Expanded project overview, clarified local setup steps, and added cross-links to the documentation set so the backend status and onboarding notes stay easy to track.
 
-Status: Backend foundation is implemented and validated, with a secure Supabase JWT resource-server setup, a working `/api/v1/me` endpoint, and clear documentation for local setup.
+Status: Backend foundation, auth, Student Profile, state/district master data, and the initial arithmetic question bank are implemented and validated.
 
 ## Overview
 JNVST GURU backend is the server-side foundation for the JNVST GURU educational platform. The repository is intentionally structured as a clean Spring Boot foundation so additional learning, assessment, and student-tracking modules can be added without reworking the platform architecture later.
@@ -17,6 +18,9 @@ The current scope is intentionally limited. It establishes the base application 
 - PostgreSQL + Supabase-ready environment configuration
 - Spring Security JWT resource server using Supabase Auth
 - Protected user endpoint: `GET /api/v1/me`
+- Student Profile endpoints: `GET /api/v1/student-profiles/me`, `POST /api/v1/student-profiles`
+- State/district reference APIs: `GET /api/v1/reference/states`, `GET /api/v1/reference/states/{stateId}/districts`
+- Arithmetic Question Bank CRUD and filter endpoints under `/api/v1/arithmetic-questions`
 - Minimal REST health endpoint: `GET /api/v1/health`
 - Automated application and endpoint tests
 - Documentation structure under the `docs/` folder
@@ -68,8 +72,8 @@ export DB_PASSWORD=jnvst_guru_password
 - Supabase Auth is the external identity provider.
 - Spring Boot validates Supabase-issued JWTs as a resource server.
 - The backend uses the JWT subject to map to the application user and role records.
-- The question-bank schema is still planned.
-- The project remains intentionally modular while the core application and auth flow stabilize.
+- The question-bank and arithmetic domain are now implemented for the initial admin CRUD and filtering flow.
+- Student profile and reference data are implemented and validated, while the broader question-bank expansion remains intentionally staged.
 
 ## Repository status
 This repository is in the foundation stage and should be updated whenever a significant milestone is reached. Documentation is intentionally kept in the `docs/` folder so the implementation, architecture, and operational guidance stay consistent.

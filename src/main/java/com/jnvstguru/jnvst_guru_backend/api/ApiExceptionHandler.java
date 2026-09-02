@@ -1,5 +1,6 @@
 package com.jnvstguru.jnvst_guru_backend.api;
 
+import com.jnvstguru.jnvst_guru_backend.service.ArithmeticQuestionNotFoundException;
 import com.jnvstguru.jnvst_guru_backend.service.StudentProfileAlreadyExistsException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
@@ -7,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -55,6 +57,30 @@ public class ApiExceptionHandler {
         error.put("error", "Conflict");
         error.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    @ExceptionHandler(ArithmeticQuestionNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleArithmeticQuestionNotFound(ArithmeticQuestionNotFoundException ex, HttpServletRequest request) {
+        String path = request.getRequestURI();
+        log.warn("[ARITHMETIC_QUESTION] Not found for path={} message={}", path, ex.getMessage());
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", OffsetDateTime.now());
+        error.put("status", HttpStatus.NOT_FOUND.value());
+        error.put("error", "Not Found");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        String path = request.getRequestURI();
+        log.warn("[ERROR] Malformed request body for path={} message={}", path, ex.getMessage());
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", OffsetDateTime.now());
+        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put("error", "Bad request");
+        error.put("message", "Request body is invalid or contains unsupported enum values");
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

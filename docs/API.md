@@ -1,10 +1,11 @@
-# API
+﻿# API
 
 ## Update log
-- 2026-09-02: Documented the working Supabase JWT authentication flow and the authenticated `/api/v1/me` endpoint, which returns the current user and profile context after a valid token is accepted.
+- 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, and the initial Arithmetic Question Bank backend endpoints.
+- 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
 
-Status: Foundation API is live and validated for health and authenticated user access. Business-domain endpoints remain planned.
+Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, and the initial Arithmetic Question Bank are implemented and validated.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -54,6 +55,164 @@ Response:
   "updatedAt": "2026-09-01T20:58:01.580367Z"
 }
 ```
+
+### Student Profile
+#### Get current student profile
+```http
+GET /api/v1/student-profiles/me
+Authorization: Bearer <supabase-access-token>
+```
+
+Returns the authenticated student's profile. If a profile does not exist, the caller receives a clean not-found style response.
+
+#### Create student profile
+```http
+POST /api/v1/student-profiles
+Authorization: Bearer <supabase-access-token>
+Content-Type: application/json
+```
+
+Request body:
+```json
+{
+  "name": "Test Student",
+  "dateOfBirth": "2014-05-15",
+  "gender": "MALE",
+  "category": "GENERAL",
+  "residentialArea": "RURAL",
+  "classLevel": 6,
+  "stateId": 1,
+  "districtId": 31,
+  "preferredLanguage": "en",
+  "examSessionId": 1
+}
+```
+
+Behavior:
+- Returns `201 Created` on successful creation.
+- Resolves the application user from the authenticated JWT subject (`sub`).
+- Prevents duplicate profiles with `409 Conflict`.
+- Validates that `stateId` and `districtId` belong together and returns `400 Bad Request` for invalid combinations.
+- Does not accept `userId` or `authUserId` from the request body.
+
+Response example:
+```json
+{
+  "exists": true,
+  "id": 2,
+  "userId": 1,
+  "name": "Test Student",
+  "dateOfBirth": "2014-05-15",
+  "gender": "MALE",
+  "category": "GENERAL",
+  "residentialArea": "RURAL",
+  "classLevel": 6,
+  "stateId": 1,
+  "stateName": "Assam",
+  "districtId": 31,
+  "districtName": "Sribhumi",
+  "preferredLanguage": "en",
+  "examSessionId": 1,
+  "createdAt": "2026-09-01T20:58:01.580367Z",
+  "updatedAt": "2026-09-01T20:58:01.580367Z"
+}
+```
+
+### State and district reference data
+#### Get all active states
+```http
+GET /api/v1/reference/states
+```
+
+Response:
+```json
+[
+  {
+    "id": 1,
+    "code": "AS",
+    "name": "Assam"
+  }
+]
+```
+
+#### Get active districts for a state
+```http
+GET /api/v1/reference/states/{stateId}/districts
+```
+
+Example:
+```http
+GET /api/v1/reference/states/1/districts
+```
+
+Response:
+```json
+[
+  {
+    "id": 1,
+    "code": "BAJALI",
+    "name": "Bajali"
+  },
+  {
+    "id": 2,
+    "code": "BAKSA",
+    "name": "Baksa"
+  }
+]
+```
+
+### Arithmetic Question Bank
+#### Get all arithmetic questions
+```http
+GET /api/v1/arithmetic-questions
+```
+
+Filters:
+```http
+GET /api/v1/arithmetic-questions?questionType=NUMBER_SYSTEM
+GET /api/v1/arithmetic-questions?difficulty=EASY
+GET /api/v1/arithmetic-questions?status=ACTIVE
+```
+
+#### Get arithmetic question by id
+```http
+GET /api/v1/arithmetic-questions/{id}
+```
+
+#### Create arithmetic question
+```http
+POST /api/v1/arithmetic-questions
+Content-Type: application/json
+```
+
+Example body:
+```json
+{
+  "questionText": "Which of the following number is the minimum? 80080, 80088, 80880, 80808",
+  "questionType": "NUMBER_SYSTEM",
+  "optionA": "80080",
+  "optionB": "80088",
+  "optionC": "80880",
+  "optionD": "80808",
+  "correctOption": "A",
+  "difficulty": "EASY",
+  "explanation": null,
+  "status": "ACTIVE"
+}
+```
+
+#### Update arithmetic question
+```http
+PUT /api/v1/arithmetic-questions/{id}
+Content-Type: application/json
+```
+
+#### Delete arithmetic question
+```http
+DELETE /api/v1/arithmetic-questions/{id}
+```
+
+This is implemented using a safe status-based soft-delete pattern where appropriate.
 
 ## Planned endpoints
 - Subject and topic catalog endpoints

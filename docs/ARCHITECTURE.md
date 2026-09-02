@@ -6,7 +6,7 @@
 - 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
 - 2026-08-30: Updated the backend implementation plan to AUTHENTICATION OPTION A: Android handles Supabase Auth; Spring Boot validates the Supabase JWT as a resource server and manages only application/business data.
 
-Status: Implemented foundation and active JWT resource-server access. Flyway V1 and V2 are applied successfully, and the backend now validates live Supabase tokens for protected endpoints including `/api/v1/me`.
+Status: Implemented foundation, active JWT resource-server access, Student Profile APIs, state/district reference data, and the initial Arithmetic Question Bank. Flyway V1 through V5 include the base schema plus the Student Profile, state/district, and arithmetic question work.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -30,8 +30,8 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - The app is launched from `JnvstGuruBackendApplication`.
 - A health endpoint is exposed at `/api/v1/health`.
 - Spring Security acts as a JWT resource server validated against the Supabase issuer and JWKS.
-- A protected current-user endpoint is exposed at `/api/v1/me`.
-- The project is intentionally minimal and avoids premature abstractions.
+- Protected endpoints include `/api/v1/me`, `/api/v1/student-profiles/me`, `/api/v1/student-profiles`, `/api/v1/reference/states`, `/api/v1/reference/states/{stateId}/districts`, and the arithmetic question CRUD routes.
+- The project remains intentionally minimal and avoids premature abstractions.
 
 ## Architectural principles
 - Keep modules logically separated.
@@ -40,18 +40,20 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - Keep database access centralized through repositories.
 - Avoid over-engineering for future scale before the real requirements appear.
 
-## Planned module boundaries
-The upcoming structure may include:
+## Module boundaries
+The current structure includes:
 - `api` for controllers and request/response DTOs
-- `application` for services and use cases
-- `domain` for core entities and business rules
-- `infrastructure` or `persistence` for JPA repositories and technical adapters
+- `service` for application logic and orchestration
+- `domain` for core entities and validation rules
+- `repository` for JPA repositories and technical adapters
 - `config` for application configuration
+
+The major modules now in active use are auth, student profile, reference data, and arithmetic question bank handling.
 
 ## Current constraints
 - Authentication is intentionally externalized to Supabase Auth; this backend does not implement password authentication itself.
-- The next implementation phase is Spring Security as a JWT Resource Server.
-- No question-bank schema has been created yet.
+- The backend is now operating as a JWT Resource Server with protected authenticated endpoints.
+- The core domain phase has progressed into Student Profile and arithmetic-question functionality without broadening scope into MAT, passage, or payment domains.
 - No event-driven or cloud-specific infrastructure is included beyond the Supabase authentication boundary.
 
 ## Authentication boundary
