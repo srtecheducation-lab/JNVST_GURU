@@ -11,7 +11,8 @@ This file records the documentation updates made while building the JNVST GURU b
 - Implemented normalized State/District master data and added the `stateId` / `districtId` contract for student profiles.
 - Fixed the LazyInitializationException in the profile GET path by fetching required relations within the transactional service layer.
 - Added the initial Arithmetic Question Bank backend with CRUD, filtering, and status-based soft-delete handling.
-- Updated the documentation set to reflect the live authentication, profile, reference-data, and arithmetic API contract.
+- Added the Flyway-backed database layer for question identity, MAT questions, language passages/questions, and paper metadata.
+- Updated the documentation set to reflect the live authentication, profile, reference-data, arithmetic API contract, and the current database-only MAT/language/paper scope.
 
 ## 2026-08-30
 - Created a descriptive onboarding guide in [HELP.md](HELP.md) and moved the generated help content into the docs folder.

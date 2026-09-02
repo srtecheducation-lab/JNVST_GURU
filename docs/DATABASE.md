@@ -7,8 +7,8 @@
 ## Status
 - Database direction: PostgreSQL
 - Migration system: Flyway
-- Migration status: V1 and V2 applied successfully against the Supabase target database
-- Scope: Foundation database design for user access, subscriptions, multilingual academic content, question bank, practice, and mock tests
+- Migration status: V1 through V7 applied successfully against the Supabase target database
+- Scope: Foundation database design for user access, subscriptions, state/district master data, arithmetic question content, MAT/language question support, and paper metadata
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
 - Flyway metadata schema: `public` by default unless explicitly overridden
@@ -48,18 +48,26 @@ This keeps the schema simpler for Java/JPA usage and avoids a mixed UUID/BIGINT 
 
 ## Module overview
 
-### 1. Language
-- `languages`
-
-### 2. User and access
+### 1. Identity and access
 - `users`
 - `roles`
 - `user_roles`
 - `student_profiles`
+- `states`
+- `districts`
 
-### 3. Subscription
+### 2. Subscription
 - `subscription_plans`
 - `subscriptions`
+
+### 3. Question model and assessment support
+- `questions`
+- `mat_questions`
+- `language_passages`
+- `language_questions`
+- `arithmetic_questions`
+- `papers`
+- `paper_questions`
 
 ### 4. Academic content
 - `subjects`
@@ -67,33 +75,22 @@ This keeps the schema simpler for Java/JPA usage and avoids a mixed UUID/BIGINT 
 - `topics`
 - `topic_translations`
 
-### 5. Passages
-- `passages`
-- `passage_translations`
-
-### 6. Question bank
-- `exam_papers`
-- `questions`
-- `question_translations`
-- `options`
-- `option_translations`
-
-### 7. Media
+### 5. Media
 - `media_assets`
 - `question_media`
 - `option_media`
 
-### 8. Practice
+### 6. Practice
 - `practice_sessions`
 - `practice_session_questions`
 - `practice_answers`
 
-### 9. Mock test
+### 7. Mock test
 - `mock_tests`
 - `mock_test_questions`
 - `mock_test_attempts`
 
-### 10. Future payments
+### 8. Future payments
 - `payments` (documented only, not implemented yet)
 
 ## Table design

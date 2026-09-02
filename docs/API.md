@@ -1,11 +1,12 @@
 ﻿# API
 
 ## Update log
-- 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, and the initial Arithmetic Question Bank backend endpoints.
+- 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, arithmetic CRUD/filter endpoints, and the current Flyway-backed schema additions.
 - 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
+- 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
 
-Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, and the initial Arithmetic Question Bank are implemented and validated.
+Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, and the initial Arithmetic Question Bank are implemented and validated. The MAT/language/paper tables are present in Flyway-backed schema support, but their REST endpoints are not yet exposed.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -215,10 +216,21 @@ DELETE /api/v1/arithmetic-questions/{id}
 This is implemented using a safe status-based soft-delete pattern where appropriate.
 
 ## Planned endpoints
+- MAT question and language passage/question APIs
 - Subject and topic catalog endpoints
 - Practice question retrieval endpoints
 - Mock test endpoints
 - Student progress endpoints
+
+## Database-only models currently present
+The following tables are present in the Flyway-backed schema, but their REST APIs are intentionally not implemented yet:
+
+- `application.questions`
+- `application.mat_questions`
+- `application.language_passages`
+- `application.language_questions`
+- `application.papers`
+- `application.paper_questions`
 
 ## API conventions
 - Use DTOs instead of exposing JPA entities directly.

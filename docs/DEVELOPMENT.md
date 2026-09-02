@@ -1,9 +1,10 @@
 # Development
 
 ## Update log
+- 2026-09-02: Updated the dev notes to reflect the current working authentication flow, profile/reference data functionality, arithmetic CRUD work, and the Flyway schema additions for question, MAT, language, and paper tables.
 - 2026-08-30: Added setup references and development workflow notes to keep local environment instructions aligned with the current backend foundation.
 
-Status: Foundation setup is in progress and verified with Java 25 + Maven Wrapper.
+Status: The backend foundation is verified with Java 25 + Maven Wrapper. The active development focus includes secure auth, student profile/ref data, arithmetic question CRUD, and Flyway-backed schema support for MAT/language/paper models without exposing new public APIs prematurely.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -57,10 +58,13 @@ $env:DB_PASSWORD = "jnvst_guru_password"
 - Verify the Java 25 build environment
 - Confirm the Spring Boot application starts correctly
 - Keep the application structure clean and modular
-- Add local postgres configuration and a health-check contract
-- Add tests before expanding domain functionality
+- Maintain the working Supabase JWT and authenticated-user flow
+- Extend the Student Profile, state/district, and arithmetic modules without redesigning existing behavior
+- Keep the Flyway schema current for the question hierarchy, MAT, language, and paper tables
+- Add tests before exposing additional public APIs
 
 ## Guidance
-- Do not add authentication or security components yet.
-- Do not implement the question-bank model before the foundation is stable.
+- Do not change the working Supabase authentication flow or JWT validation layer.
+- Do not broaden the public API beyond the modules already implemented.
+- Keep database schema changes in Flyway and avoid editing already-applied migrations.
 - Update these docs whenever a significant implementation milestone is reached.

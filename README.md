@@ -1,16 +1,16 @@
 # JNVST GURU Backend
 
 ## Update log
-- 2026-09-02: Verified the working Supabase JWT flow, completed the Student Profile and reference-data APIs, and added the initial Arithmetic Question Bank backend.
-- 2026-09-02: Updated the docs to reflect the live Student Profile contract, state/district normalization, and arithmetic CRUD/filter endpoints.
+- 2026-09-02: Updated the docs to reflect the working Supabase JWT flow, Student Profile API behavior, normalized state/district data, arithmetic CRUD/filter support, and the Flyway-backed question-model additions.
+- 2026-09-02: Confirmed the current backend status after the Flyway migration sequence was validated and the app built successfully.
 - 2026-08-30: Expanded project overview, clarified local setup steps, and added cross-links to the documentation set so the backend status and onboarding notes stay easy to track.
 
-Status: Backend foundation, auth, Student Profile, state/district master data, and the initial arithmetic question bank are implemented and validated.
+Status: Backend foundation, Supabase JWT authentication, Student Profile APIs, state/district reference data, arithmetic question CRUD, and the database-layer MAT/language/paper model are in place. The public API remains intentionally limited to the implemented modules.
 
 ## Overview
 JNVST GURU backend is the server-side foundation for the JNVST GURU educational platform. The repository is intentionally structured as a clean Spring Boot foundation so additional learning, assessment, and student-tracking modules can be added without reworking the platform architecture later.
 
-The current scope is intentionally limited. It establishes the base application lifecycle, environment configuration, and startup contract before the more complex question-bank and learning-domain features are introduced.
+The current scope remains intentionally narrow. It establishes the base application lifecycle, environment configuration, secure authenticated access flow, and the specific schema/API pieces that were already implemented and validated.
 
 ## Current implementation
 - Java 25 + Spring Boot application scaffold
@@ -21,6 +21,7 @@ The current scope is intentionally limited. It establishes the base application 
 - Student Profile endpoints: `GET /api/v1/student-profiles/me`, `POST /api/v1/student-profiles`
 - State/district reference APIs: `GET /api/v1/reference/states`, `GET /api/v1/reference/states/{stateId}/districts`
 - Arithmetic Question Bank CRUD and filter endpoints under `/api/v1/arithmetic-questions`
+- Flyway schema support for `application.states`, `application.districts`, `application.questions`, `application.mat_questions`, `application.language_passages`, `application.language_questions`, `application.papers`, and `application.paper_questions`
 - Minimal REST health endpoint: `GET /api/v1/health`
 - Automated application and endpoint tests
 - Documentation structure under the `docs/` folder
