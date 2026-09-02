@@ -64,6 +64,10 @@ export DB_PASSWORD=jnvst_guru_password
 - [docs/DECISIONS.md](docs/DECISIONS.md) — major architectural decisions
 
 ## Current API
+- Subscription history endpoint: `GET /api/v1/subscriptions` (authenticated)
+- Student Profile endpoints: `GET /api/v1/student-profiles/me`, `POST /api/v1/student-profiles`
+- Reference data endpoints: `GET /api/v1/reference/states`, `GET /api/v1/reference/states/{stateId}/districts`
+- Arithmetic Question Bank endpoints under `/api/v1/arithmetic-questions`
 - Health endpoint: `GET /api/v1/health`
 - Authenticated current-user endpoint: `GET /api/v1/me`
   - Requires `Authorization: Bearer <supabase-access-token>`

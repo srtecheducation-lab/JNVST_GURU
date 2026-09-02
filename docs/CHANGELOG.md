@@ -13,6 +13,7 @@ This file records the documentation updates made while building the JNVST GURU b
 - Added the initial Arithmetic Question Bank backend with CRUD, filtering, and status-based soft-delete handling.
 - Added the Flyway-backed database layer for question identity, MAT questions, language passages/questions, and paper metadata.
 - Updated the documentation set to reflect the live authentication, profile, reference-data, arithmetic API contract, and the current database-only MAT/language/paper scope.
+- Added the authenticated subscriptions endpoint to the README, onboarding guide, and API contract, and removed stale bootstrap guidance.
 
 ## 2026-08-30
 - Created a descriptive onboarding guide in [HELP.md](HELP.md) and moved the generated help content into the docs folder.

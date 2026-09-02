@@ -1,6 +1,7 @@
 # JNVST GURU Database Design
 
 ## Update log
+- 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
 - 2026-08-30: Replaced the placeholder DB notes with the complete PostgreSQL schema design, ER relationship overview, and migration-readiness review for the upcoming Flyway work.
 - 2026-08-30: Finalized the approved auth/user/subscription design and executed the foundation Flyway migration set against the Supabase database. The migration history is recorded in Flyway while the application tables remain defined under the `application` schema.
 
@@ -12,6 +13,22 @@
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
 - Flyway metadata schema: `public` by default unless explicitly overridden
+
+## Implemented schema status
+
+The following Flyway migrations are present in the repository and have been applied successfully:
+
+| Migration | Scope |
+| --- | --- |
+| V1 | Application schema, users, roles, user roles, student profiles, subscription plans, and subscriptions |
+| V2 | Seeded roles and subscription plans |
+| V3 | Exam sessions and extended student profile fields |
+| V4 | States, districts, and normalized student profile location foreign keys |
+| V5 | Base question identity and arithmetic question content |
+| V6 | MAT questions, language passages, and language questions |
+| V7 | Papers and paper-question mappings |
+
+The applied schema is authoritative for the current backend. The broader tables later in this document (subjects, topics, practice, mock tests, media, and payments) remain design/planning material unless listed above.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -164,13 +181,62 @@ This allows one user to have multiple roles.
 | id | BIGINT PK | Generated identity |
 | user_id | BIGINT UNIQUE NOT NULL FK -> application.users.id | One profile per user |
 | name | VARCHAR(150) | Student display name |
-| class_level | VARCHAR(50) | e.g. 5, 8, 10 |
+| class_level | INTEGER | Student class level |
+| date_of_birth | DATE | Nullable date of birth |
+| gender | VARCHAR(10) | MALE, FEMALE, or OTHER |
+| category | VARCHAR(10) | GENERAL, OBC, SC, or ST |
+| residential_area | VARCHAR(10) | RURAL or URBAN |
+| preferred_language | VARCHAR(20) | Preferred language code |
+| exam_session_id | BIGINT FK -> application.exam_sessions.id | Current exam session |
+| state_id | BIGINT FK -> application.states.id | Normalized state reference |
+| district_id | BIGINT FK -> application.districts.id | Normalized district reference |
 | created_at | TIMESTAMPTZ | Audit |
 | updated_at | TIMESTAMPTZ | Audit |
 
 Important:
 - one application user can have one student profile
 - future teacher/admin profile tables are intentionally not created yet
+
+### exam_sessions
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| exam_code | VARCHAR(50) | Exam identifier, e.g. `JNVST` |
+| class_level | INTEGER | Positive class level |
+| session_name | VARCHAR(50) | e.g. `2027-28` |
+| status | VARCHAR(30) | ACTIVE, INACTIVE, or ARCHIVED |
+| start_date | DATE | Nullable |
+| end_date | DATE | Nullable |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+Unique constraint:
+- `(exam_code, class_level, session_name)`
+
+### states
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| code | VARCHAR(20) UNIQUE NOT NULL | State code |
+| name | VARCHAR(150) NOT NULL | Display name |
+| status | VARCHAR(20) | ACTIVE or INACTIVE |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+### districts
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| state_id | BIGINT NOT NULL FK -> application.states.id | Owning state |
+| code | VARCHAR(50) | District code |
+| name | VARCHAR(150) | Display name |
+| status | VARCHAR(20) | ACTIVE or INACTIVE |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+Unique constraints:
+- `(state_id, code)`
+- `(state_id, name)`
 
 ### subscription_plans
 | Column | Type | Notes |
@@ -287,7 +353,7 @@ Important:
 - a passage translation is a language-specific adaptation, not necessarily a literal translation
 - all localized passages for one passage remain linked under the same `passage_id`
 
-### exam_papers
+### exam_papers (planned catalog design)
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | BIGINT PK | Generated identity |
@@ -301,7 +367,7 @@ Important:
 
 This table supports previous-year question sets while staying separate from the main question bank logic.
 
-### questions
+### questions (planned catalog design)
 | Column | Type | Notes |
 | --- | --- | --- |
 | id | BIGINT PK | Generated identity |
@@ -315,6 +381,79 @@ This table supports previous-year question sets while staying separate from the 
 | is_active | BOOLEAN | Default true |
 | created_at | TIMESTAMPTZ | Audit |
 | updated_at | TIMESTAMPTZ | Audit |
+
+The implemented V5-V7 base `questions` table is intentionally smaller than this planned catalog model:
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| content_hash | VARCHAR(64) UNIQUE NOT NULL | Stable content identity |
+| status | VARCHAR(20) NOT NULL | Current question status |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+It uses `content_hash` as the stable question identity and stores type-specific content in child tables:
+
+### arithmetic_questions
+| Column | Type | Notes |
+| --- | --- | --- |
+| question_id | BIGINT PK/FK -> questions.id | Shared question identity |
+| question_text | TEXT NOT NULL | Arithmetic prompt |
+| question_type | VARCHAR(40) | Arithmetic classification |
+| option_a, option_b, option_c, option_d | TEXT NOT NULL | Answer choices |
+| correct_option | VARCHAR(1) | A, B, C, or D |
+| difficulty | VARCHAR(30) | Difficulty level |
+| explanation | TEXT | Nullable |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+### mat_questions
+| Column | Type | Notes |
+| --- | --- | --- |
+| question_id | BIGINT PK/FK -> questions.id | Shared question identity |
+| question_text | TEXT | Nullable prompt |
+| correct_option | VARCHAR(1) | A, B, C, or D |
+| difficulty | VARCHAR(30) | Difficulty level |
+| explanation | TEXT | Nullable |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+### language_passages
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| passage_text | TEXT NOT NULL | Passage content |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+### language_questions
+This table stores language-specific question content and optionally links to a passage. It has `question_id`, `passage_id`, `question_text`, four answer options, `correct_option`, `difficulty`, `explanation`, and audit timestamps.
+
+### papers
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| code | VARCHAR(50) UNIQUE NOT NULL | Paper code |
+| name | VARCHAR(200) NOT NULL | Display name |
+| exam_year | INTEGER | Nullable year |
+| status | VARCHAR(20) | ACTIVE, INACTIVE, or ARCHIVED |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+### paper_questions
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| paper_id | BIGINT NOT NULL FK -> application.papers.id | Paper |
+| question_id | BIGINT NOT NULL FK -> application.questions.id | Question |
+| batch_no | INTEGER NOT NULL | Import/content batch |
+| question_number | INTEGER NOT NULL | Position in paper |
+| question_type | VARCHAR(40) NOT NULL | Question classification |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+Unique constraint:
+- `(paper_id, question_number)`
 
 Recommended constraints:
 - `question_type` should use a `CHECK` constraint with allowable values
@@ -634,44 +773,12 @@ Recommended data integrity rules:
 - Ensure translation entries are not inserted without a valid `language_id`
 - Keep `updated_at` current via application or database trigger logic
 
-## Design review before Flyway migration
+## Migration review status
 
-The design is strong overall, but a few adjustments are recommended before creating any SQL migration files.
+The initial Flyway implementation is complete through V7. The applied migrations are the source of truth for the current backend schema; this document's subjects, topics, media, practice, mock-test, and payment sections describe planned future extensions and are not currently migrated.
 
-### Recommended changes to make before Flyway
-1. Standardize on `BIGINT` primary keys for all tables.
-   - This is the simplest choice for PostgreSQL and keeps object IDs consistent across the project.
-
-2. Make `student_id` refer to `student_profiles.id`, not `users.id`.
-   - This matches the requirement that student-specific context is stored in a separate profile table.
-   - `practice_sessions.student_id` and `mock_test_attempts.student_id` should point to `student_profiles.id`.
-
-3. Use composite primary keys for join tables where there is no independent business ID.
-   - `user_roles(user_id, role_id)`
-   - `question_media(question_id, media_id)`
-   - `option_media(option_id, media_id)`
-
-4. Add uniqueness constraints to prevent duplicates in generated session/test structures.
-   - `user_roles`: composite unique key already covers this
-   - `practice_session_questions`: `(session_id, question_id)` and `(session_id, display_order)`
-   - `mock_test_questions`: `(mock_test_id, question_id)` and `(mock_test_id, display_order)`
-
-5. Confirm whether `questions.topic_id` should be nullable or required.
-   - For the most flexible design, keep `topic_id` nullable because some questions may only be classified by subject or passage.
-   - If the product requires strict topic classification, make it `NOT NULL` with a product decision.
-
-6. Keep `payments` out of migration scope entirely.
-   - The requirement explicitly says not to implement it yet.
-   - The table should remain in the design doc only, not in the migration set.
-
-7. Review all `status` fields and convert them to controlled values using check constraints.
-   - Example values: `ACTIVE`, `INACTIVE`, `LOCKED`, `IN_PROGRESS`, `COMPLETED`, `ABANDONED`, etc.
-
-8. Decide whether to use a separate `exam_papers` record for each paper or only a paper metadata table.
-   - It is acceptable as written; it acts as a logical grouping for previous-year question collections.
-
-### No major structural change required
-The proposed schema is already suitable for Flyway as a first migration set, as long as the above adjustments are reflected in the final migration design.
-
-## Final migration note
-No SQL migrations will be created in this step. This document is the approved design review for the upcoming Flyway schema work, and the next step is to convert the reviewed model into migration files only after the points above are confirmed.
+When extending the schema:
+- Add a new versioned Flyway migration; do not edit an applied migration.
+- Keep application tables under the `application` schema.
+- Preserve the Supabase Auth boundary and do not store credentials in application tables.
+- Update this document and `CHANGELOG.md` with each significant schema change.

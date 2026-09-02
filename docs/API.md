@@ -2,6 +2,7 @@
 
 ## Update log
 - 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, arithmetic CRUD/filter endpoints, and the current Flyway-backed schema additions.
+- 2026-09-02: Added the authenticated subscriptions endpoint to keep the API contract aligned with the implemented controller.
 - 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
 - 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
@@ -56,6 +57,15 @@ Response:
   "updatedAt": "2026-09-01T20:58:01.580367Z"
 }
 ```
+
+### Subscriptions
+#### Get current user's subscriptions
+```http
+GET /api/v1/subscriptions
+Authorization: Bearer <supabase-access-token>
+```
+
+Returns the authenticated user's subscription history, including plan, lifecycle status, and start/end timestamps.
 
 ### Student Profile
 #### Get current student profile

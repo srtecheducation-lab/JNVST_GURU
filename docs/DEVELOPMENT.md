@@ -2,6 +2,7 @@
 
 ## Update log
 - 2026-09-02: Updated the dev notes to reflect the current working authentication flow, profile/reference data functionality, arithmetic CRUD work, and the Flyway schema additions for question, MAT, language, and paper tables.
+- 2026-09-02: Confirmed the documented API surface includes authenticated subscriptions alongside the profile, reference-data, and arithmetic modules.
 - 2026-08-30: Added setup references and development workflow notes to keep local environment instructions aligned with the current backend foundation.
 
 Status: The backend foundation is verified with Java 25 + Maven Wrapper. The active development focus includes secure auth, student profile/ref data, arithmetic question CRUD, and Flyway-backed schema support for MAT/language/paper models without exposing new public APIs prematurely.
