@@ -16,6 +16,8 @@ This file records the documentation updates made while building the JNVST GURU b
 - Added the authenticated subscriptions endpoint to the README, onboarding guide, and API contract, and removed stale bootstrap guidance.
 - Added simple CRUD repositories for the finalized question-bank JPA entities without changing migrations or schema.
 - Added minimal read-only question-bank services for question and paper retrieval without adding APIs or business logic.
+- Added response DTOs for question-bank entities, keeping relationship fields as IDs and avoiding nested entity responses.
+- Added read-only question and paper REST endpoints without introducing write APIs or schema changes.
 
 ## 2026-08-30
 - Created a descriptive onboarding guide in [HELP.md](HELP.md) and moved the generated help content into the docs folder.

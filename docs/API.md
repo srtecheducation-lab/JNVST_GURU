@@ -3,6 +3,7 @@
 ## Update log
 - 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, arithmetic CRUD/filter endpoints, and the current Flyway-backed schema additions.
 - 2026-09-02: Added the authenticated subscriptions endpoint to keep the API contract aligned with the implemented controller.
+- 2026-09-02: Added read-only question and paper endpoints for reusable question lookup, paper listing, and paper-question occurrences.
 - 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
 - 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
@@ -25,6 +26,22 @@ All API paths use the version prefix:
 ```
 
 ## Implemented endpoints
+### Question
+```http
+GET /api/v1/questions/{questionId}
+```
+
+Returns the reusable question identity without paper-specific fields.
+
+### Papers
+```http
+GET /api/v1/papers
+GET /api/v1/papers/{paperId}
+GET /api/v1/papers/{paperId}/questions
+```
+
+The paper-question endpoint returns occurrence data including `paperId`, `questionId`, `batchNo`, `questionNumber`, and the paper section `questionType`.
+
 ### Health
 ```http
 GET /api/v1/health

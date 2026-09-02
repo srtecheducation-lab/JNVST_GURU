@@ -5,6 +5,8 @@
 - 2026-09-02: Confirmed the documented API surface includes authenticated subscriptions alongside the profile, reference-data, and arithmetic modules.
 - 2026-09-02: Added the question-bank Spring Data JPA repository layer with simple CRUD interfaces only.
 - 2026-09-02: Added read-only QuestionService and PaperService operations for the upcoming API layer.
+- 2026-09-02: Added read-only question-bank response DTOs without introducing request validation or API mapping logic.
+- 2026-09-02: Added read-only question and paper REST controllers with DTO-only responses.
 - 2026-08-30: Added setup references and development workflow notes to keep local environment instructions aligned with the current backend foundation.
 
 Status: The backend foundation is verified with Java 25 + Maven Wrapper. The active development focus includes secure auth, student profile/ref data, arithmetic question CRUD, and Flyway-backed schema support for MAT/language/paper models without exposing new public APIs prematurely.

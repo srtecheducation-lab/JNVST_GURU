@@ -26,6 +26,11 @@ public class PaperService {
     }
 
     @Transactional(readOnly = true)
+    public List<PaperEntity> getPapers() {
+        return paperRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
     public boolean existsById(Long paperId) {
         return paperRepository.existsById(paperId);
     }

@@ -2,6 +2,8 @@ package com.jnvstguru.jnvst_guru_backend.api;
 
 import com.jnvstguru.jnvst_guru_backend.service.ArithmeticQuestionNotFoundException;
 import com.jnvstguru.jnvst_guru_backend.service.StudentProfileAlreadyExistsException;
+import com.jnvstguru.jnvst_guru_backend.service.QuestionNotFoundException;
+import com.jnvstguru.jnvst_guru_backend.service.PaperNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
@@ -63,6 +65,17 @@ public class ApiExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleArithmeticQuestionNotFound(ArithmeticQuestionNotFoundException ex, HttpServletRequest request) {
         String path = request.getRequestURI();
         log.warn("[ARITHMETIC_QUESTION] Not found for path={} message={}", path, ex.getMessage());
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", OffsetDateTime.now());
+        error.put("status", HttpStatus.NOT_FOUND.value());
+        error.put("error", "Not Found");
+        error.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
+    @ExceptionHandler({QuestionNotFoundException.class, PaperNotFoundException.class})
+    public ResponseEntity<Map<String, Object>> handleQuestionBankNotFound(RuntimeException ex, HttpServletRequest request) {
+        log.warn("[QUESTION_BANK] Not found for path={} message={}", request.getRequestURI(), ex.getMessage());
         Map<String, Object> error = new LinkedHashMap<>();
         error.put("timestamp", OffsetDateTime.now());
         error.put("status", HttpStatus.NOT_FOUND.value());
