@@ -25,6 +25,9 @@ public class PaperQuestionEntity {
     @Column(name = "question_number", nullable = false)
     private Integer questionNumber;
 
+    @Column(name = "batch_question_key", nullable = false, length = 60)
+    private String batchQuestionKey;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "question_type", nullable = false, length = 40)
     private PaperQuestionType questionType;
@@ -57,6 +60,8 @@ public class PaperQuestionEntity {
     public void setBatchNo(Integer batchNo) { this.batchNo = batchNo; }
     public Integer getQuestionNumber() { return questionNumber; }
     public void setQuestionNumber(Integer questionNumber) { this.questionNumber = questionNumber; }
+    public String getBatchQuestionKey() { return batchQuestionKey; }
+    public void setBatchQuestionKey(String batchQuestionKey) { this.batchQuestionKey = batchQuestionKey; }
     public PaperQuestionType getQuestionType() { return questionType; }
     public void setQuestionType(PaperQuestionType questionType) { this.questionType = questionType; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
