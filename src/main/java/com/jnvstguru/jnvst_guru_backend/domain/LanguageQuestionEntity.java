@@ -30,9 +30,6 @@ public class LanguageQuestionEntity {
     private QuestionEntity question;
 
     @Transient
-    private LanguagePassageEntity passage;
-
-    @Transient
     private String questionText;
 
     @Transient
@@ -89,14 +86,6 @@ public class LanguageQuestionEntity {
 
     public void setQuestion(QuestionEntity question) {
         this.question = question;
-    }
-
-    public LanguagePassageEntity getPassage() {
-        return passage;
-    }
-
-    public void setPassage(LanguagePassageEntity passage) {
-        this.passage = passage;
     }
 
     public String getQuestionText() {

@@ -20,7 +20,7 @@ public class PaperQuestionEntity {
     private QuestionEntity question;
 
     @Column(name = "batch_no", nullable = false)
-    private Integer batchNo;
+    private String batchNo;
 
     @Column(name = "question_number", nullable = false)
     private Integer questionNumber;
@@ -56,8 +56,8 @@ public class PaperQuestionEntity {
     public void setPaper(PaperEntity paper) { this.paper = paper; }
     public QuestionEntity getQuestion() { return question; }
     public void setQuestion(QuestionEntity question) { this.question = question; }
-    public Integer getBatchNo() { return batchNo; }
-    public void setBatchNo(Integer batchNo) { this.batchNo = batchNo; }
+    public String getBatchNo() { return batchNo; }
+    public void setBatchNo(String batchNo) { this.batchNo = batchNo; }
     public Integer getQuestionNumber() { return questionNumber; }
     public void setQuestionNumber(Integer questionNumber) { this.questionNumber = questionNumber; }
     public String getBatchQuestionKey() { return batchQuestionKey; }

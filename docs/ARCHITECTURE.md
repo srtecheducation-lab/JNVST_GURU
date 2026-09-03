@@ -2,6 +2,7 @@
 
 ## Update log
 - 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
+- 2026-09-04: Added disabled-by-default, read-only Google Drive service-account integration for future stream-based Excel readers.
 - 2026-09-02: Added the current Flyway-backed schema status to reflect the question hierarchy, MAT/language support, and paper metadata tables now in the database layer.
 - 2026-08-30: Added documentation cross-references and clarified the current architecture status and planned module boundaries.
 - 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
@@ -34,6 +35,7 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - Protected endpoints include `/api/v1/me`, `/api/v1/student-profiles/me`, `/api/v1/student-profiles`, `/api/v1/reference/states`, `/api/v1/reference/states/{stateId}/districts`, and the arithmetic question CRUD routes.
 - The project remains intentionally minimal and avoids premature abstractions.
 - The database layer now includes a shared `questions` identity model along with MAT, language, and paper tables, but the corresponding API surface is still intentionally staged.
+- Google Drive access is isolated in `GoogleDriveService`; it downloads private files by `fileId` into an `InputStream` and is not connected to persistence or import logic.
 
 ## Architectural principles
 - Keep modules logically separated.
@@ -57,6 +59,10 @@ The major modules now in active use are auth, student profile, reference data, a
 - The backend is now operating as a JWT Resource Server with protected authenticated endpoints.
 - The core domain phase has progressed into Student Profile and arithmetic-question functionality without broadening scope into MAT, passage, or payment domains.
 - No event-driven or cloud-specific infrastructure is included beyond the Supabase authentication boundary.
+- Google Drive integration is infrastructure-only, read-only, and disabled unless explicitly enabled through deployment configuration.
+
+## Google Drive infrastructure
+The optional Google Drive integration uses a service account and the `drive.readonly` scope. Set `GOOGLE_DRIVE_ENABLED=true` and provide the externally managed service-account JSON through `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`. The service exposes only `downloadFile(fileId)` and does not write downloaded content to the server filesystem.
 
 ## Authentication boundary
 JNVST GURU uses Supabase Auth as the identity provider for application users. The backend application database stores only the local application record needed to associate the authenticated account with roles, profile data, subscriptions, and educational content.

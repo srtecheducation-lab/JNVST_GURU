@@ -6,6 +6,7 @@
 - 2026-09-02: Added read-only question and paper endpoints for reusable question lookup, paper listing, and paper-question occurrences.
 - 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
 - 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
+- 2026-09-04: Added the ADMIN-only Google Drive English Arithmetic import endpoint.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
 
 Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, and the initial Arithmetic Question Bank are implemented and validated. The MAT/language/paper tables are present in Flyway-backed schema support, but their REST endpoints are not yet exposed.
@@ -241,6 +242,27 @@ DELETE /api/v1/arithmetic-questions/{id}
 ```
 
 This is implemented using a safe status-based soft-delete pattern where appropriate.
+
+### Google Drive English Arithmetic Import
+```http
+POST /api/v1/admin/import/google-drive/arithmetic
+Authorization: Bearer <supabase-access-token>
+Content-Type: application/json
+```
+
+Request:
+```json
+{
+  "fileId": "google-drive-file-id",
+  "paperId": 1,
+  "batchNo": "A001"
+}
+```
+
+The endpoint requires the `ADMIN` role, reads a private `.xlsx` file through the
+Google Drive service, requires `language_code = EN`, and imports all valid rows
+transactionally. It reuses questions by normalized English content hash and
+creates the corresponding English content and paper occurrence records.
 
 ## Planned endpoints
 - MAT question and language passage/question APIs

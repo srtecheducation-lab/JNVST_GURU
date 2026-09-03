@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface QuestionRepository extends JpaRepository<QuestionEntity, Long> {
+    java.util.Optional<QuestionEntity> findByContentHash(String contentHash);
 }

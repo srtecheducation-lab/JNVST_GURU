@@ -15,8 +15,17 @@ public class QuestionEnglishEntity {
     @Column(name = "option_c", columnDefinition = "TEXT") private String optionC;
     @Column(name = "option_d", columnDefinition = "TEXT") private String optionD;
     @Column(columnDefinition = "TEXT") private String explanation;
-    @Column(nullable = false, updatable = false) private OffsetDateTime createdAt;
-    @Column(nullable = false) private OffsetDateTime updatedAt;
+    @Column(name = "created_at", nullable = false, updatable = false) private OffsetDateTime createdAt;
+    @Column(name = "updated_at", nullable = false) private OffsetDateTime updatedAt;
     @PrePersist void prePersist() { var now = OffsetDateTime.now(); createdAt = now; updatedAt = now; }
     @PreUpdate void preUpdate() { updatedAt = OffsetDateTime.now(); }
+
+    public void setQuestion(QuestionEntity question) { this.question = question; }
+    public void setQuestionId(Long questionId) { this.questionId = questionId; }
+    public void setQuestionText(String questionText) { this.questionText = questionText; }
+    public void setOptionA(String optionA) { this.optionA = optionA; }
+    public void setOptionB(String optionB) { this.optionB = optionB; }
+    public void setOptionC(String optionC) { this.optionC = optionC; }
+    public void setOptionD(String optionD) { this.optionD = optionD; }
+    public void setExplanation(String explanation) { this.explanation = explanation; }
 }

@@ -10,8 +10,8 @@ public class LanguageQuestionEnglishEntity {
     @OneToOne(fetch = FetchType.LAZY, optional = false) @MapsId
     @JoinColumn(name = "question_id", referencedColumnName = "id") private QuestionEntity question;
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "passage_id") private LanguagePassageEnglishEntity passage;
-    @Column(nullable = false, updatable = false) private OffsetDateTime createdAt;
-    @Column(nullable = false) private OffsetDateTime updatedAt;
+    @Column(name = "created_at", nullable = false, updatable = false) private OffsetDateTime createdAt;
+    @Column(name = "updated_at", nullable = false) private OffsetDateTime updatedAt;
     @PrePersist void prePersist() { var now = OffsetDateTime.now(); createdAt = now; updatedAt = now; }
     @PreUpdate void preUpdate() { updatedAt = OffsetDateTime.now(); }
 }

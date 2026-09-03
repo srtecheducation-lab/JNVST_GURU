@@ -8,7 +8,7 @@ public record PaperQuestionResponse(
         Long id,
         Long paperId,
         Long questionId,
-        Integer batchNo,
+        String batchNo,
         Integer questionNumber,
         PaperQuestionType questionType,
         OffsetDateTime createdAt,

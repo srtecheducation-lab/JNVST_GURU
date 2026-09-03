@@ -15,8 +15,8 @@ public class QuestionBengaliEntity {
     @Column(name = "option_c", columnDefinition = "TEXT") private String optionC;
     @Column(name = "option_d", columnDefinition = "TEXT") private String optionD;
     @Column(columnDefinition = "TEXT") private String explanation;
-    @Column(nullable = false, updatable = false) private OffsetDateTime createdAt;
-    @Column(nullable = false) private OffsetDateTime updatedAt;
+    @Column(name = "created_at", nullable = false, updatable = false) private OffsetDateTime createdAt;
+    @Column(name = "updated_at", nullable = false) private OffsetDateTime updatedAt;
     @PrePersist void prePersist() { var now = OffsetDateTime.now(); createdAt = now; updatedAt = now; }
     @PreUpdate void preUpdate() { updatedAt = OffsetDateTime.now(); }
 }
