@@ -30,23 +30,23 @@ public class ArithmeticQuestionEntity {
     @JoinColumn(name = "question_id", referencedColumnName = "id")
     private QuestionEntity question;
 
-    @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String questionText;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "question_type", nullable = false, length = 40)
     private ArithmeticQuestionEnums.QuestionType questionType;
 
-    @Column(name = "option_a", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionA;
 
-    @Column(name = "option_b", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionB;
 
-    @Column(name = "option_c", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionC;
 
-    @Column(name = "option_d", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionD;
 
     @Column(name = "correct_option", nullable = false, length = 1)
@@ -56,7 +56,7 @@ public class ArithmeticQuestionEntity {
     @Column(nullable = false, length = 20)
     private ArithmeticQuestionEnums.Difficulty difficulty;
 
-    @Column(columnDefinition = "TEXT")
+    @Transient
     private String explanation;
 
     @Transient

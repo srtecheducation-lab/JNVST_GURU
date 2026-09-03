@@ -2,6 +2,7 @@
 
 ## Update log
 - 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
+- 2026-09-03: Added Flyway V8 multilingual question content and language-specific passage relationships for English, Hindi, and Bengali.
 - 2026-09-02: Added the JPA/domain mapping status for the finalized question-bank entities and shared-primary-key relationships; no schema or migration changes were made.
 - 2026-09-02: Added simple Spring Data JPA CRUD repositories for the seven question-bank entities; no schema or migration changes were made.
 - 2026-09-02: Added read-only question-bank services for question lookup, paper lookup, and paper-question retrieval; no schema or migration changes were made.
@@ -12,7 +13,7 @@
 ## Status
 - Database direction: PostgreSQL
 - Migration system: Flyway
-- Migration status: V1 through V7 applied successfully against the Supabase target database
+- Migration status: V1 through V8 are present; V8 adds the multilingual question-bank structure
 - Scope: Foundation database design for user access, subscriptions, state/district master data, arithmetic question content, MAT/language question support, and paper metadata
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
@@ -31,8 +32,9 @@ The following Flyway migrations are present in the repository and have been appl
 | V5 | Base question identity and arithmetic question content |
 | V6 | MAT questions, language passages, and language questions |
 | V7 | Papers and paper-question mappings |
+| V8 | English, Hindi, and Bengali question content, passages, and language-question relationships |
 
-The applied schema is authoritative for the current backend. JPA entity mappings, simple CRUD repositories, basic read-only services, and response DTOs now cover the seven question-bank tables listed above. The broader tables later in this document (subjects, topics, practice, mock tests, media, and payments) remain design/planning material unless listed above.
+The applied schema is authoritative for the current backend. JPA entity mappings and repositories cover the multilingual question-bank tables. Subject tables retain metadata such as `correct_option`; localized question text and options live in the language-specific question tables. The broader tables later in this document (subjects, topics, practice, mock tests, media, and payments) remain design/planning material unless listed above.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -83,10 +85,12 @@ This keeps the schema simpler for Java/JPA usage and avoids a mixed UUID/BIGINT 
 
 ### 3. Question model and assessment support
 - `questions`
-- `mat_questions`
-- `language_passages`
-- `language_questions`
 - `arithmetic_questions`
+- `mat_questions`
+- `language_questions`
+- `question_english`, `question_hindi`, `question_bengali`
+- `language_passages_english`, `language_passages_hindi`, `language_passages_bengali`
+- `language_question_english`, `language_question_hindi`, `language_question_bengali`
 - `papers`
 - `paper_questions`
 

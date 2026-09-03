@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
 @Entity
-@Table(name = "language_passages", schema = "application")
+@Table(name = "language_passages_english", schema = "application")
 public class LanguagePassageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

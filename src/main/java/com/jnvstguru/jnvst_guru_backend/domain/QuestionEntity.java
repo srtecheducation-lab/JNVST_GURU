@@ -47,6 +47,15 @@ public class QuestionEntity {
     @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)
     private LanguageQuestionEntity languageQuestion;
 
+    @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)
+    private QuestionEnglishEntity englishContent;
+
+    @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)
+    private QuestionHindiEntity hindiContent;
+
+    @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)
+    private QuestionBengaliEntity bengaliContent;
+
     @OneToMany(mappedBy = "question", fetch = FetchType.LAZY)
     private List<PaperQuestionEntity> paperQuestions;
 

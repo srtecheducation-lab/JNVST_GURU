@@ -7,7 +7,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Transient;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
@@ -29,23 +29,22 @@ public class LanguageQuestionEntity {
     @JoinColumn(name = "question_id", referencedColumnName = "id")
     private QuestionEntity question;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "passage_id")
+    @Transient
     private LanguagePassageEntity passage;
 
-    @Column(name = "question_text", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String questionText;
 
-    @Column(name = "option_a", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionA;
 
-    @Column(name = "option_b", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionB;
 
-    @Column(name = "option_c", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionC;
 
-    @Column(name = "option_d", nullable = false, columnDefinition = "TEXT")
+    @Transient
     private String optionD;
 
     @Column(name = "correct_option", nullable = false, length = 1)
