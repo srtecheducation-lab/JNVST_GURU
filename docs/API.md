@@ -262,7 +262,9 @@ Request:
 The endpoint requires the `ADMIN` role, reads a private `.xlsx` file through the
 Google Drive service, requires `language_code = EN`, and imports all valid rows
 transactionally. It reuses questions by normalized English content hash and
-creates the corresponding English content and paper occurrence records.
+creates the corresponding English content and paper occurrence records. New
+English content is persisted through its shared `question_id` identity derived
+from the reusable question; existing English content is updated in place.
 
 ## Planned endpoints
 - MAT question and language passage/question APIs

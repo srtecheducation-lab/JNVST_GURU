@@ -51,6 +51,13 @@ Then run the application with the development profile:
 ./mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
+## Startup logs
+`startup.cmd` writes the current application run to
+`logs/jnvst-guru-backend.log`. Before it starts Spring Boot, it renames an
+existing active log to `jnvst-guru-backend_yyyy-MM-dd_HH-mm-ss.log`. Historical
+logs are retained; the new application run writes only to the fresh active
+file.
+
 If you are not using Docker, set the environment variables before starting the app:
 
 ```powershell

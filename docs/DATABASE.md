@@ -404,6 +404,12 @@ The implemented V5-V7 base `questions` table is intentionally smaller than this 
 
 It uses `content_hash` as the stable question identity and stores type-specific content in child tables:
 
+The type-specific and localized child entities use `@MapsId`: a new child is
+persisted with its `QuestionEntity` association set and without manually
+assigning `question_id`. Hibernate derives the child's shared primary key from
+the already-persisted parent. A child that already exists is loaded by that ID
+before it is updated.
+
 ### arithmetic_questions
 | Column | Type | Notes |
 | --- | --- | --- |
@@ -456,7 +462,7 @@ This table stores language-specific question content and optionally links to a p
 | id | BIGINT PK | Generated identity |
 | paper_id | BIGINT NOT NULL FK -> application.papers.id | Paper |
 | question_id | BIGINT NOT NULL FK -> application.questions.id | Question |
-| batch_no | INTEGER NOT NULL | Import/content batch |
+| batch_no | VARCHAR(60) NOT NULL | Import/content batch |
 | question_number | INTEGER NOT NULL | Position in paper |
 | batch_question_key | VARCHAR(60) NOT NULL | Position within the batch, e.g. `A001-41` |
 | question_type | VARCHAR(40) NOT NULL | Question classification |

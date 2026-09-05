@@ -29,9 +29,11 @@ exit /b 1
 echo [STARTUP] Starting JNVST GURU backend using the single application.properties configuration.
 if not exist "%cd%\logs" mkdir "%cd%\logs"
 if exist "%cd%\logs\jnvst-guru-backend.log" (
-    for /f "tokens=1-6 delims=/:. " %%A in ("%date% %time%") do set "LOG_TS=%%C-%%A-%%B-%%D-%%E-%%F"
-    ren "%cd%\logs\jnvst-guru-backend.log" "jnvst-guru-backend_%LOG_TS%.log"
-    echo [STARTUP] Rotated previous log file to jnvst-guru-backend_%LOG_TS%.log
+    setlocal EnableDelayedExpansion
+    for /f %%I in ('powershell.exe -NoProfile -Command "Get-Date -Format yyyy-MM-dd_HH-mm-ss"') do set "LOG_TS=%%I"
+    ren "%cd%\logs\jnvst-guru-backend.log" "jnvst-guru-backend_!LOG_TS!.log"
+    echo [STARTUP] Rotated previous log file to jnvst-guru-backend_!LOG_TS!.log
+    endlocal
 )
 
 if exist "%cd%\local.properties" (
@@ -51,7 +53,12 @@ if errorlevel 1 (
     exit /b %ERRORLEVEL%
 )
 echo Starting JNVST GURU backend...
-call .\mvnw.cmd spring-boot:run
+if exist "%cd%\local\jnvst-guru-228205b301f3.json" (
+    echo [STARTUP] Loading Google Drive credentials from the local secret file.
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "$env:GOOGLE_DRIVE_ENABLED='true'; $env:GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON=[System.IO.File]::ReadAllText('%cd%\local\jnvst-guru-228205b301f3.json'); & '.\mvnw.cmd' spring-boot:run"
+) else (
+    call .\mvnw.cmd spring-boot:run
+)
 exit /b %ERRORLEVEL%
 
 :status_app

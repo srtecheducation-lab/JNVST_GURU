@@ -87,7 +87,6 @@ public class GoogleDriveArithmeticImportService {
             QuestionEnglishEntity english = englishRepository.findById(question.getId())
                     .orElseGet(QuestionEnglishEntity::new);
             english.setQuestion(question);
-            english.setQuestionId(question.getId());
             english.setQuestionText(row.questionText());
             english.setOptionA(row.optionA());
             english.setOptionB(row.optionB());
