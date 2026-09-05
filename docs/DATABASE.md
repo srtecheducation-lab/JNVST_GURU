@@ -410,6 +410,12 @@ assigning `question_id`. Hibernate derives the child's shared primary key from
 the already-persisted parent. A child that already exists is loaded by that ID
 before it is updated.
 
+For multilingual paper imports, an existing `paper_questions` occurrence keyed
+by paper, batch, and question number is the cross-language link to the shared
+question identity. English and Bengali localized rows for that occurrence write
+to `question_english` and `question_bengali` respectively, without creating a
+second `questions` record.
+
 ### arithmetic_questions
 | Column | Type | Notes |
 | --- | --- | --- |

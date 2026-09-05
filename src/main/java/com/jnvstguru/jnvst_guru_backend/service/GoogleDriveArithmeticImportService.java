@@ -24,6 +24,7 @@ public class GoogleDriveArithmeticImportService {
     private final QuestionRepository questionRepository;
     private final ArithmeticQuestionRepository arithmeticRepository;
     private final QuestionEnglishRepository englishRepository;
+    private final QuestionBengaliRepository bengaliRepository;
     private final PaperQuestionRepository paperQuestionRepository;
 
     public GoogleDriveArithmeticImportService(
@@ -32,17 +33,28 @@ public class GoogleDriveArithmeticImportService {
             QuestionRepository questionRepository,
             ArithmeticQuestionRepository arithmeticRepository,
             QuestionEnglishRepository englishRepository,
+            QuestionBengaliRepository bengaliRepository,
             PaperQuestionRepository paperQuestionRepository) {
         this.driveService = driveService;
         this.paperRepository = paperRepository;
         this.questionRepository = questionRepository;
         this.arithmeticRepository = arithmeticRepository;
         this.englishRepository = englishRepository;
+        this.bengaliRepository = bengaliRepository;
         this.paperQuestionRepository = paperQuestionRepository;
     }
 
     @Transactional
     public ArithmeticImportResponse importFile(GoogleDriveArithmeticImportRequest request) {
+        return importFile(request, ImportLanguage.ENGLISH);
+    }
+
+    @Transactional
+    public ArithmeticImportResponse importBengaliFile(GoogleDriveArithmeticImportRequest request) {
+        return importFile(request, ImportLanguage.BENGALI);
+    }
+
+    private ArithmeticImportResponse importFile(GoogleDriveArithmeticImportRequest request, ImportLanguage language) {
         if (request == null || request.fileId() == null || request.fileId().isBlank()
                 || request.paperId() == null || request.batchNo() == null || request.batchNo().isBlank()) {
             throw new IllegalArgumentException("fileId, paperId, and batchNo are required");
@@ -51,7 +63,7 @@ public class GoogleDriveArithmeticImportService {
                 .orElseThrow(() -> new IllegalArgumentException("Paper was not found"));
         List<RowData> rows;
         try (InputStream input = driveService.downloadFile(request.fileId())) {
-            rows = readAndValidate(input);
+            rows = readAndValidate(input, language.code());
         } catch (IOException ex) {
             throw new GoogleDriveException("Unable to read the Google Drive file", ex);
         }
@@ -65,11 +77,14 @@ public class GoogleDriveArithmeticImportService {
             String key = batchNo + "-" + row.questionNumber();
             PaperQuestionEntity existingOccurrence = paperQuestionRepository
                     .findByPaper_IdAndBatchQuestionKey(paper.getId(), key).orElse(null);
-            QuestionEntity question = questionRepository.findByContentHash(row.contentHash()).orElse(null);
-            if (existingOccurrence != null && question != null
-                    && !existingOccurrence.getQuestion().getId().equals(question.getId())) {
+            QuestionEntity questionByContentHash = questionRepository.findByContentHash(row.contentHash()).orElse(null);
+            if (existingOccurrence != null && questionByContentHash != null
+                    && !existingOccurrence.getQuestion().getId().equals(questionByContentHash.getId())) {
                 throw new IllegalArgumentException("Batch question key already belongs to another question: " + key);
             }
+            QuestionEntity question = existingOccurrence != null
+                    ? existingOccurrence.getQuestion()
+                    : questionByContentHash;
             if (question == null) {
                 question = new QuestionEntity();
                 question.setContentHash(row.contentHash());
@@ -84,16 +99,31 @@ public class GoogleDriveArithmeticImportService {
                 arithmeticRepository.save(arithmetic);
             }
 
-            QuestionEnglishEntity english = englishRepository.findById(question.getId())
-                    .orElseGet(QuestionEnglishEntity::new);
-            english.setQuestion(question);
-            english.setQuestionText(row.questionText());
-            english.setOptionA(row.optionA());
-            english.setOptionB(row.optionB());
-            english.setOptionC(row.optionC());
-            english.setOptionD(row.optionD());
-            english.setExplanation(row.explanation());
-            englishRepository.save(english);
+            if (language == ImportLanguage.ENGLISH) {
+                QuestionEnglishEntity english = englishRepository.findById(question.getId())
+                        .orElseGet(QuestionEnglishEntity::new);
+                english.setQuestion(question);
+                english.setQuestionText(row.questionText());
+                english.setOptionA(row.optionA());
+                english.setOptionB(row.optionB());
+                english.setOptionC(row.optionC());
+                english.setOptionD(row.optionD());
+                english.setExplanation(row.explanation());
+                englishRepository.save(english);
+            } else if (language == ImportLanguage.BENGALI) {
+                QuestionBengaliEntity bengali = bengaliRepository.findById(question.getId())
+                        .orElseGet(QuestionBengaliEntity::new);
+                bengali.setQuestion(question);
+                bengali.setQuestionText(row.questionText());
+                bengali.setOptionA(row.optionA());
+                bengali.setOptionB(row.optionB());
+                bengali.setOptionC(row.optionC());
+                bengali.setOptionD(row.optionD());
+                bengali.setExplanation(row.explanation());
+                bengaliRepository.save(bengali);
+            } else {
+                throw new IllegalStateException("Unsupported arithmetic import language: " + language);
+            }
 
             if (existingOccurrence == null) {
                 PaperQuestionEntity occurrence = new PaperQuestionEntity();
@@ -110,7 +140,7 @@ public class GoogleDriveArithmeticImportService {
         return new ArithmeticImportResponse(rows.size(), questionIds);
     }
 
-    private List<RowData> readAndValidate(InputStream input) throws IOException {
+    private List<RowData> readAndValidate(InputStream input, String expectedLanguageCode) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(input)) {
             if (workbook.getNumberOfSheets() == 0) {
                 throw new IllegalArgumentException("Excel file contains no worksheets");
@@ -137,7 +167,9 @@ public class GoogleDriveArithmeticImportService {
                     throw new IllegalArgumentException("Duplicate question_number: " + number);
                 }
                 String language = text(row, headers, "language_code").toUpperCase(Locale.ROOT);
-                if (!"EN".equals(language)) throw new IllegalArgumentException("Only language_code=EN is supported");
+                if (!expectedLanguageCode.equals(language)) {
+                    throw new IllegalArgumentException("Only language_code=" + expectedLanguageCode + " is supported");
+                }
                 String questionText = requiredText(row, headers, "question_text");
                 String optionA = requiredText(row, headers, "option_a");
                 String optionB = requiredText(row, headers, "option_b");
@@ -189,6 +221,21 @@ public class GoogleDriveArithmeticImportService {
                             .getBytes(StandardCharsets.UTF_8));
             return HexFormat.of().formatHex(digest);
         } catch (NoSuchAlgorithmException ex) { throw new IllegalStateException("SHA-256 is unavailable", ex); }
+    }
+
+    private enum ImportLanguage {
+        ENGLISH("EN"),
+        BENGALI("BN");
+
+        private final String code;
+
+        ImportLanguage(String code) {
+            this.code = code;
+        }
+
+        private String code() {
+            return code;
+        }
     }
 
     private record RowData(int questionNumber, String questionText, String optionA, String optionB, String optionC,

@@ -19,4 +19,12 @@ public class QuestionBengaliEntity {
     @Column(name = "updated_at", nullable = false) private OffsetDateTime updatedAt;
     @PrePersist void prePersist() { var now = OffsetDateTime.now(); createdAt = now; updatedAt = now; }
     @PreUpdate void preUpdate() { updatedAt = OffsetDateTime.now(); }
+
+    public void setQuestion(QuestionEntity question) { this.question = question; }
+    public void setQuestionText(String questionText) { this.questionText = questionText; }
+    public void setOptionA(String optionA) { this.optionA = optionA; }
+    public void setOptionB(String optionB) { this.optionB = optionB; }
+    public void setOptionC(String optionC) { this.optionC = optionC; }
+    public void setOptionD(String optionD) { this.optionD = optionD; }
+    public void setExplanation(String explanation) { this.explanation = explanation; }
 }

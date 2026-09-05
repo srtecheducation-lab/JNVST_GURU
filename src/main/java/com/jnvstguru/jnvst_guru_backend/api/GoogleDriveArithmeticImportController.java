@@ -25,4 +25,11 @@ public class GoogleDriveArithmeticImportController {
             @Valid @RequestBody GoogleDriveArithmeticImportRequest request) {
         return ResponseEntity.ok(importService.importFile(request));
     }
+
+    @PostMapping("/arithmetic/bengali")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ArithmeticImportResponse> importBengaliArithmetic(
+            @Valid @RequestBody GoogleDriveArithmeticImportRequest request) {
+        return ResponseEntity.ok(importService.importBengaliFile(request));
+    }
 }

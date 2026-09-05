@@ -266,6 +266,20 @@ creates the corresponding English content and paper occurrence records. New
 English content is persisted through its shared `question_id` identity derived
 from the reusable question; existing English content is updated in place.
 
+### Google Drive Bengali Arithmetic Import
+```http
+POST /api/v1/admin/import/google-drive/arithmetic/bengali
+Authorization: Bearer <supabase-access-token>
+Content-Type: application/json
+```
+
+This ADMIN-only endpoint accepts the same request body and Excel structure as
+the English importer, but requires every usable row to have `language_code = BN`.
+It writes localized prompt and option content to `question_bengali`. When the
+same paper, batch, and question number already exist, it reuses that occurrence's
+shared question identity; otherwise it reuses an exact normalized Bengali
+content hash or creates a new reusable question and paper occurrence.
+
 ## Planned endpoints
 - MAT question and language passage/question APIs
 - Subject and topic catalog endpoints
