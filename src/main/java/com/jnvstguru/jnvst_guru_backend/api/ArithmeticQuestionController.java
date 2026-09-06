@@ -2,6 +2,7 @@ package com.jnvstguru.jnvst_guru_backend.api;
 
 import com.jnvstguru.jnvst_guru_backend.api.dto.ArithmeticQuestionRequest;
 import com.jnvstguru.jnvst_guru_backend.api.dto.ArithmeticQuestionResponse;
+import com.jnvstguru.jnvst_guru_backend.api.dto.StudentArithmeticQuestionResponse;
 import com.jnvstguru.jnvst_guru_backend.domain.ArithmeticQuestionEnums;
 import com.jnvstguru.jnvst_guru_backend.service.ArithmeticQuestionService;
 import jakarta.validation.Valid;
@@ -27,6 +28,14 @@ public class ArithmeticQuestionController {
 
     public ArithmeticQuestionController(ArithmeticQuestionService arithmeticQuestionService) {
         this.arithmeticQuestionService = arithmeticQuestionService;
+    }
+
+    @GetMapping("/student/arithmetic-questions")
+    public ResponseEntity<Page<StudentArithmeticQuestionResponse>> getStudentQuestions(
+            @RequestParam(required = false) ArithmeticQuestionEnums.QuestionType questionType,
+            @RequestParam(required = false) ArithmeticQuestionEnums.Difficulty difficulty,
+            @PageableDefault(size = 20, sort = "questionId") Pageable pageable) {
+        return ResponseEntity.ok(arithmeticQuestionService.getStudentQuestions(questionType, difficulty, pageable));
     }
 
     @GetMapping("/arithmetic-questions")

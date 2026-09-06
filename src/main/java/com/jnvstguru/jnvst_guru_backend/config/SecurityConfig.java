@@ -66,6 +66,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/health").permitAll()
                         .requestMatchers("/api/v1/me/**").authenticated()
                         .requestMatchers("/api/v1/student-profiles/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+                        .requestMatchers("/api/v1/student/arithmetic-questions/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .requestMatchers("/api/v1/arithmetic-questions/**").hasAnyRole("TEACHER", "ADMIN")
                         .requestMatchers("/api/v1/subscriptions/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .anyRequest().authenticated())

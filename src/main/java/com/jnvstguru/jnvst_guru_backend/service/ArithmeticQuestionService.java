@@ -2,6 +2,7 @@ package com.jnvstguru.jnvst_guru_backend.service;
 
 import com.jnvstguru.jnvst_guru_backend.api.dto.ArithmeticQuestionRequest;
 import com.jnvstguru.jnvst_guru_backend.api.dto.ArithmeticQuestionResponse;
+import com.jnvstguru.jnvst_guru_backend.api.dto.StudentArithmeticQuestionResponse;
 import com.jnvstguru.jnvst_guru_backend.domain.ArithmeticQuestionEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.ArithmeticQuestionEnums;
 import com.jnvstguru.jnvst_guru_backend.repository.ArithmeticQuestionRepository;
@@ -20,6 +21,27 @@ public class ArithmeticQuestionService {
 
     public ArithmeticQuestionService(ArithmeticQuestionRepository arithmeticQuestionRepository) {
         this.arithmeticQuestionRepository = arithmeticQuestionRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<StudentArithmeticQuestionResponse> getStudentQuestions(
+            ArithmeticQuestionEnums.QuestionType questionType,
+            ArithmeticQuestionEnums.Difficulty difficulty,
+            Pageable pageable) {
+        if (pageable.getPageNumber() < 0 || pageable.getPageSize() > 100) {
+            throw new IllegalArgumentException("page must be non-negative and size must not exceed 100");
+        }
+
+        return arithmeticQuestionRepository.findActiveStudentQuestions(questionType, difficulty, pageable)
+                .map(question -> new StudentArithmeticQuestionResponse(
+                        question.getQuestionId(),
+                        question.getQuestionType(),
+                        question.getQuestionText(),
+                        question.getOptionA(),
+                        question.getOptionB(),
+                        question.getOptionC(),
+                        question.getOptionD(),
+                        question.getDifficulty()));
     }
 
     @Transactional(readOnly = true)

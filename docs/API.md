@@ -191,6 +191,22 @@ Response:
 ```
 
 ### Arithmetic Question Bank
+#### Get student practice questions
+```http
+GET /api/v1/student/arithmetic-questions
+Authorization: Bearer <student-access-token>
+```
+
+Optional filters and pagination:
+```http
+GET /api/v1/student/arithmetic-questions?questionType=FRACTION&difficulty=EASY&page=0&size=20
+```
+
+The response is paginated and contains only active Arithmetic questions. Each
+student question contains `id`, `questionType`, `questionText`, `optionA`,
+`optionB`, `optionC`, `optionD`, and `difficulty`. It does not contain
+`correctOption`, `explanation`, status, or authoring timestamps.
+
 #### Get all arithmetic questions
 ```http
 GET /api/v1/arithmetic-questions
@@ -283,7 +299,6 @@ content hash or creates a new reusable question and paper occurrence.
 ## Planned endpoints
 - MAT question and language passage/question APIs
 - Subject and topic catalog endpoints
-- Practice question retrieval endpoints
 - Mock test endpoints
 - Student progress endpoints
 
