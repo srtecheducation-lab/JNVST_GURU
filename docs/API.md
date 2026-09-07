@@ -7,6 +7,7 @@
 - 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
 - 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
 - 2026-09-04: Added the ADMIN-only Google Drive English Arithmetic import endpoint.
+- 2026-09-07: Added authenticated student practice-attempt submission, set status, and latest-attempt review endpoints.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
 
 Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, and the initial Arithmetic Question Bank are implemented and validated. The MAT/language/paper tables are present in Flyway-backed schema support, but their REST endpoints are not yet exposed.
@@ -84,6 +85,29 @@ Authorization: Bearer <supabase-access-token>
 ```
 
 Returns the authenticated user's subscription history, including plan, lifecycle status, and start/end timestamps.
+
+### Practice attempts
+Student-only endpoints use the exact combination of `practiceMode`, `subject`, `topic`, `difficulty`, and `page`.
+
+```http
+POST /api/v1/student/practice-attempts
+GET  /api/v1/student/practice-attempts?practiceMode=TOPIC&subject=ARITHMETIC&topic=FRACTION&difficulty=EASY
+GET  /api/v1/student/practice-attempts/latest?practiceMode=TOPIC&subject=ARITHMETIC&topic=FRACTION&difficulty=EASY&page=0
+```
+
+Submission example:
+```json
+{
+  "practiceMode": "TOPIC",
+  "subject": "ARITHMETIC",
+  "topic": "FRACTION",
+  "difficulty": "EASY",
+  "page": 0,
+  "answers": [{"questionId": 36, "selectedOption": "B"}]
+}
+```
+
+Every question in the resolved 20-question set is stored in a new attempt. Unanswered questions have `selectedOption: null`; `correctOption` is snapshotted in the answer row and is returned only by submission/latest-attempt responses. The status endpoint returns all available sets and exact-set completion flags without requiring one request per set.
 
 ### Student Profile
 #### Get current student profile

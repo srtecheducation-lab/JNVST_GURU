@@ -8,9 +8,36 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import java.util.List;
 
 @Repository
 public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQuestionEntity, Long> {
+    @Query("""
+            select a
+            from ArithmeticQuestionEntity a
+            join fetch a.question q
+            where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
+              and (:topic is null or a.questionType = :topic)
+              and a.difficulty = :difficulty
+            order by a.questionId
+            """)
+    List<ArithmeticQuestionEntity> findActivePracticeQuestions(
+            @Param("topic") ArithmeticQuestionEnums.QuestionType topic,
+            @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty,
+            Pageable pageable);
+
+    @Query("""
+            select count(a)
+            from ArithmeticQuestionEntity a
+            join a.question q
+            where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
+              and (:topic is null or a.questionType = :topic)
+              and a.difficulty = :difficulty
+            """)
+    long countActivePracticeQuestions(
+            @Param("topic") ArithmeticQuestionEnums.QuestionType topic,
+            @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty);
+
     @Query("""
             select a.questionId as questionId,
                    a.questionType as questionType,

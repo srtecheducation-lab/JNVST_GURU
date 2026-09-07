@@ -91,6 +91,12 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Alternatives considered: custom backend login, backend-owned password auth, and using the Supabase service-role key in the Android app. All of those violate the approved architecture or security boundary.
 - Consequences: Spring Boot must implement JWT resource-server validation and enforce authorization based on the authenticated `sub`, while the Android app remains responsible for Supabase Auth flows and access-token handling. No passwords, refresh tokens, or custom login tokens are stored in the backend.
 
+## BD-012: Append-only practice attempts
+- Date: 2026-09-07
+- Decision: Store every submission as a new attempt and snapshot the correct option in each attempt answer.
+- Reason: Result, review, and progress must remain stable even when the question bank changes; completion is evaluated against the exact practice selection.
+- Consequences: Re-attempts are never updates, and latest-attempt lookup is explicitly separate from set-status lookup.
+
 ## Document status legend
 - Implemented: Already created and working in the project.
 - Planned: Scheduled for a later stage.

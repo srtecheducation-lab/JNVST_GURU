@@ -3,6 +3,7 @@
 ## Update log
 - 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
 - 2026-09-04: Added disabled-by-default, read-only Google Drive service-account integration for future stream-based Excel readers.
+- 2026-09-07: Added the student practice-attempt module with server-side set resolution and historical answer snapshots.
 - 2026-09-02: Added the current Flyway-backed schema status to reflect the question hierarchy, MAT/language support, and paper metadata tables now in the database layer.
 - 2026-08-30: Added documentation cross-references and clarified the current architecture status and planned module boundaries.
 - 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
@@ -52,7 +53,7 @@ The current structure includes:
 - `repository` for JPA repositories and technical adapters
 - `config` for application configuration
 
-The major modules now in active use are auth, student profile, reference data, and arithmetic question bank handling.
+The major modules now in active use are auth, student profile, reference data, arithmetic question bank handling, and practice attempts.
 
 ## Current constraints
 - Authentication is intentionally externalized to Supabase Auth; this backend does not implement password authentication itself.
