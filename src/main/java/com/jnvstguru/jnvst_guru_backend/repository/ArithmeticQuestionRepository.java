@@ -13,18 +13,24 @@ import java.util.List;
 @Repository
 public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQuestionEntity, Long> {
     @Query("""
-            select a
+            select a.questionId as questionId,
+                   a.correctOption as correctOption
             from ArithmeticQuestionEntity a
-            join fetch a.question q
+            join a.question q
             where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
               and (:topic is null or a.questionType = :topic)
               and a.difficulty = :difficulty
             order by a.questionId
             """)
-    List<ArithmeticQuestionEntity> findActivePracticeQuestions(
+    List<PracticeQuestionProjection> findActivePracticeQuestions(
             @Param("topic") ArithmeticQuestionEnums.QuestionType topic,
             @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty,
             Pageable pageable);
+
+    interface PracticeQuestionProjection {
+        Long getQuestionId();
+        String getCorrectOption();
+    }
 
     @Query("""
             select count(a)

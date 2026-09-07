@@ -25,14 +25,14 @@ class PracticeAttemptServiceTest {
     @InjectMocks PracticeAttemptService service;
 
     private UserEntity user;
-    private ArithmeticQuestionEntity first;
-    private ArithmeticQuestionEntity second;
+    private ArithmeticQuestionRepository.PracticeQuestionProjection first;
+    private ArithmeticQuestionRepository.PracticeQuestionProjection second;
 
     @BeforeEach
     void setUp() {
         user = new UserEntity();
-        first = question(7L, "A", ArithmeticQuestionEnums.QuestionType.FRACTION);
-        second = question(36L, "C", ArithmeticQuestionEnums.QuestionType.FRACTION);
+        first = question(7L, "A");
+        second = question(36L, "C");
         when(userService.findByAuthUserId(AUTH_ID)).thenReturn(user);
         when(questionRepository.findActivePracticeQuestions(any(), any(), any())).thenReturn(List.of(first, second));
         when(attemptRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -115,12 +115,10 @@ class PracticeAttemptServiceTest {
                 ArithmeticQuestionEnums.QuestionType.FRACTION, ArithmeticQuestionEnums.Difficulty.EASY, 0));
     }
 
-    private ArithmeticQuestionEntity question(Long id, String correct, ArithmeticQuestionEnums.QuestionType topic) {
-        ArithmeticQuestionEntity question = new ArithmeticQuestionEntity();
-        question.setQuestionId(id);
-        question.setQuestionType(topic);
-        question.setDifficulty(ArithmeticQuestionEnums.Difficulty.EASY);
-        question.setCorrectOption(correct);
-        return question;
+    private ArithmeticQuestionRepository.PracticeQuestionProjection question(Long id, String correct) {
+        return new ArithmeticQuestionRepository.PracticeQuestionProjection() {
+            public Long getQuestionId() { return id; }
+            public String getCorrectOption() { return correct; }
+        };
     }
 }

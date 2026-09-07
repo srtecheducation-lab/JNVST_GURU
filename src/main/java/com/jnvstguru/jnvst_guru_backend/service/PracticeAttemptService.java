@@ -3,6 +3,7 @@ package com.jnvstguru.jnvst_guru_backend.service;
 import com.jnvstguru.jnvst_guru_backend.api.dto.*;
 import com.jnvstguru.jnvst_guru_backend.domain.*;
 import com.jnvstguru.jnvst_guru_backend.repository.*;
+import jakarta.persistence.EntityManager;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,20 +15,22 @@ import java.util.stream.Collectors;
 @Service
 public class PracticeAttemptService {
     private static final int SET_SIZE = 20;
-
     private final ApplicationUserService applicationUserService;
     private final ArithmeticQuestionRepository questionRepository;
     private final PracticeAttemptRepository attemptRepository;
     private final PracticeAttemptAnswerRepository answerRepository;
+    private final EntityManager entityManager;
 
     public PracticeAttemptService(ApplicationUserService applicationUserService,
                                   ArithmeticQuestionRepository questionRepository,
                                   PracticeAttemptRepository attemptRepository,
-                                  PracticeAttemptAnswerRepository answerRepository) {
+                                  PracticeAttemptAnswerRepository answerRepository,
+                                  EntityManager entityManager) {
         this.applicationUserService = applicationUserService;
         this.questionRepository = questionRepository;
         this.attemptRepository = attemptRepository;
         this.answerRepository = answerRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
@@ -35,9 +38,10 @@ public class PracticeAttemptService {
         validateSelection(request.practiceMode(), request.subject(), request.topic(),
                 request.difficulty(), request.page());
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
-        List<ArithmeticQuestionEntity> questions = findSet(request.topic(), request.difficulty(), request.page());
+        List<ArithmeticQuestionRepository.PracticeQuestionProjection> questions =
+                findSet(request.topic(), request.difficulty(), request.page());
         Map<Long, PracticeAttemptRequest.AnswerRequest> submitted = normalizeAnswers(request.answers());
-        Set<Long> questionIds = questions.stream().map(ArithmeticQuestionEntity::getQuestionId).collect(Collectors.toSet());
+        Set<Long> questionIds = questions.stream().map(ArithmeticQuestionRepository.PracticeQuestionProjection::getQuestionId).collect(Collectors.toSet());
         if (!questionIds.containsAll(submitted.keySet())) {
             throw new IllegalArgumentException("One or more submitted question IDs do not belong to this practice set.");
         }
@@ -54,7 +58,7 @@ public class PracticeAttemptService {
         attempt.setPageNumber(request.page());
         attempt.setQuestionCount(questions.size());
 
-        for (ArithmeticQuestionEntity question : questions) {
+        for (ArithmeticQuestionRepository.PracticeQuestionProjection question : questions) {
             PracticeAttemptRequest.AnswerRequest submittedAnswer = submitted.get(question.getQuestionId());
             String selected = submittedAnswer == null ? null : normalizeOption(submittedAnswer.selectedOption());
             boolean isCorrect = selected != null && selected.equals(question.getCorrectOption());
@@ -76,8 +80,31 @@ public class PracticeAttemptService {
         attempt.setUnansweredCount(unanswered);
         attempt.setWrongCount(questions.size() - correct - unanswered);
         PracticeAttemptEntity saved = attemptRepository.save(attempt);
-        answerRepository.saveAll(answers);
+        saveAnswersBulk(saved.getId(), answers);
         return toResponse(saved, answers);
+    }
+
+    private void saveAnswersBulk(Long attemptId, List<PracticeAttemptAnswerEntity> answers) {
+        if (answers.isEmpty()) {
+            return;
+        }
+        String values = java.util.stream.IntStream.range(0, answers.size())
+                .mapToObj(i -> "(:attempt" + i + ", :question" + i + ", :selected" + i
+                        + ", :correct" + i + ", :isCorrect" + i + ")")
+                .collect(Collectors.joining(", "));
+        var query = entityManager.createNativeQuery("""
+                insert into application.practice_attempt_answers
+                    (attempt_id, question_id, selected_option, correct_option, is_correct)
+                values """ + values);
+        for (int i = 0; i < answers.size(); i++) {
+            PracticeAttemptAnswerEntity answer = answers.get(i);
+            query.setParameter("attempt" + i, attemptId);
+            query.setParameter("question" + i, answer.getQuestionId());
+            query.setParameter("selected" + i, answer.getSelectedOption());
+            query.setParameter("correct" + i, answer.getCorrectOption());
+            query.setParameter("isCorrect" + i, answer.isCorrect());
+        }
+        query.executeUpdate();
     }
 
     @Transactional(readOnly = true)
@@ -113,8 +140,9 @@ public class PracticeAttemptService {
         return toResponse(attempt, answerRepository.findByAttemptOrderByQuestionId(attempt));
     }
 
-    private List<ArithmeticQuestionEntity> findSet(ArithmeticQuestionEnums.QuestionType topic,
-                                                    ArithmeticQuestionEnums.Difficulty difficulty, int page) {
+    private List<ArithmeticQuestionRepository.PracticeQuestionProjection> findSet(
+            ArithmeticQuestionEnums.QuestionType topic,
+            ArithmeticQuestionEnums.Difficulty difficulty, int page) {
         return questionRepository.findActivePracticeQuestions(
                 topic, difficulty, PageRequest.of(page, SET_SIZE));
     }
