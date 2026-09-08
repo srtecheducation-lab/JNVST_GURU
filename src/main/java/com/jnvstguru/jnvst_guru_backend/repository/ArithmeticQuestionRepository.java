@@ -17,12 +17,39 @@ public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQu
                    a.correctOption as correctOption
             from ArithmeticQuestionEntity a
             join a.question q
+            join q.englishContent e
             where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
               and (:topic is null or a.questionType = :topic)
               and a.difficulty = :difficulty
+              and e.questionText is not null
+              and e.optionA is not null
+              and e.optionB is not null
+              and e.optionC is not null
+              and e.optionD is not null
             order by a.questionId
             """)
     List<PracticeQuestionProjection> findActivePracticeQuestions(
+            @Param("topic") ArithmeticQuestionEnums.QuestionType topic,
+            @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty,
+            Pageable pageable);
+
+    @Query("""
+            select a.questionId as questionId,
+                   a.correctOption as correctOption
+            from ArithmeticQuestionEntity a
+            join a.question q
+            join q.bengaliContent b
+            where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
+              and (:topic is null or a.questionType = :topic)
+              and a.difficulty = :difficulty
+              and b.questionText is not null
+              and b.optionA is not null
+              and b.optionB is not null
+              and b.optionC is not null
+              and b.optionD is not null
+            order by a.questionId
+            """)
+    List<PracticeQuestionProjection> findActiveBengaliPracticeQuestions(
             @Param("topic") ArithmeticQuestionEnums.QuestionType topic,
             @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty,
             Pageable pageable);
@@ -55,10 +82,15 @@ public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQu
                    a.difficulty as difficulty
             from ArithmeticQuestionEntity a
             join a.question q
-            left join q.englishContent e
+            join q.englishContent e
             where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
               and (:questionType is null or a.questionType = :questionType)
               and (:difficulty is null or a.difficulty = :difficulty)
+              and e.questionText is not null
+              and e.optionA is not null
+              and e.optionB is not null
+              and e.optionC is not null
+              and e.optionD is not null
             order by a.questionId
             """)
     Page<StudentArithmeticQuestionProjection> findActiveStudentQuestions(
@@ -77,10 +109,15 @@ public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQu
                    a.difficulty as difficulty
             from ArithmeticQuestionEntity a
             join a.question q
-            left join q.bengaliContent b
+            join q.bengaliContent b
             where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
               and (:questionType is null or a.questionType = :questionType)
               and (:difficulty is null or a.difficulty = :difficulty)
+              and b.questionText is not null
+              and b.optionA is not null
+              and b.optionB is not null
+              and b.optionC is not null
+              and b.optionD is not null
             order by a.questionId
             """)
     Page<StudentArithmeticQuestionProjection> findActiveStudentQuestionsInBengali(

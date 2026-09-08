@@ -41,9 +41,9 @@ public class PracticeAttemptService {
         validateSelection(request.practiceMode(), request.subject(), request.topic(),
                 request.difficulty(), request.page());
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
-        List<ArithmeticQuestionRepository.PracticeQuestionProjection> questions =
-                findSet(request.topic(), request.difficulty(), request.page());
         Map<Long, PracticeAttemptRequest.AnswerRequest> submitted = normalizeAnswers(request.answers());
+        List<ArithmeticQuestionRepository.PracticeQuestionProjection> questions =
+                findSet(request.topic(), request.difficulty(), request.page(), submitted.keySet());
         Set<Long> questionIds = questions.stream().map(ArithmeticQuestionRepository.PracticeQuestionProjection::getQuestionId).collect(Collectors.toSet());
         if (!questionIds.containsAll(submitted.keySet())) {
             Set<Long> rejectedIds = new LinkedHashSet<>(submitted.keySet());
@@ -148,9 +148,29 @@ public class PracticeAttemptService {
 
     private List<ArithmeticQuestionRepository.PracticeQuestionProjection> findSet(
             ArithmeticQuestionEnums.QuestionType topic,
-            ArithmeticQuestionEnums.Difficulty difficulty, int page) {
-        return questionRepository.findActivePracticeQuestions(
-                topic, difficulty, PageRequest.of(page, SET_SIZE));
+            ArithmeticQuestionEnums.Difficulty difficulty, int page, Set<Long> submittedIds) {
+        PageRequest pageRequest = PageRequest.of(page, SET_SIZE);
+        List<ArithmeticQuestionRepository.PracticeQuestionProjection> english =
+                questionRepository.findActivePracticeQuestions(topic, difficulty, pageRequest);
+        if (submittedIds.isEmpty()) {
+            return english;
+        }
+        if (containsAllIds(english, submittedIds)) {
+            return english;
+        }
+
+        List<ArithmeticQuestionRepository.PracticeQuestionProjection> bengali =
+                questionRepository.findActiveBengaliPracticeQuestions(topic, difficulty, pageRequest);
+        return containsAllIds(bengali, submittedIds) ? bengali : english;
+    }
+
+    private boolean containsAllIds(
+            List<ArithmeticQuestionRepository.PracticeQuestionProjection> questions,
+            Set<Long> submittedIds) {
+        return questions.stream()
+                .map(ArithmeticQuestionRepository.PracticeQuestionProjection::getQuestionId)
+                .collect(Collectors.toSet())
+                .containsAll(submittedIds);
     }
 
     private Map<Long, PracticeAttemptRequest.AnswerRequest> normalizeAnswers(
