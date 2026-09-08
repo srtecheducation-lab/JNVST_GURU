@@ -55,10 +55,11 @@ public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQu
                    a.difficulty as difficulty
             from ArithmeticQuestionEntity a
             join a.question q
-            join q.englishContent e
+            left join q.englishContent e
             where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
               and (:questionType is null or a.questionType = :questionType)
               and (:difficulty is null or a.difficulty = :difficulty)
+            order by a.questionId
             """)
     Page<StudentArithmeticQuestionProjection> findActiveStudentQuestions(
             @Param("questionType") ArithmeticQuestionEnums.QuestionType questionType,
@@ -76,10 +77,11 @@ public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQu
                    a.difficulty as difficulty
             from ArithmeticQuestionEntity a
             join a.question q
-            join q.bengaliContent b
+            left join q.bengaliContent b
             where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
               and (:questionType is null or a.questionType = :questionType)
               and (:difficulty is null or a.difficulty = :difficulty)
+            order by a.questionId
             """)
     Page<StudentArithmeticQuestionProjection> findActiveStudentQuestionsInBengali(
             @Param("questionType") ArithmeticQuestionEnums.QuestionType questionType,

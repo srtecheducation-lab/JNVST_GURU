@@ -4,6 +4,8 @@ import com.jnvstguru.jnvst_guru_backend.api.dto.*;
 import com.jnvstguru.jnvst_guru_backend.domain.*;
 import com.jnvstguru.jnvst_guru_backend.repository.*;
 import jakarta.persistence.EntityManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import java.util.stream.Collectors;
 @Service
 public class PracticeAttemptService {
     private static final int SET_SIZE = 20;
+    private static final Logger log = LoggerFactory.getLogger(PracticeAttemptService.class);
     private final ApplicationUserService applicationUserService;
     private final ArithmeticQuestionRepository questionRepository;
     private final PracticeAttemptRepository attemptRepository;
@@ -43,6 +46,9 @@ public class PracticeAttemptService {
         Map<Long, PracticeAttemptRequest.AnswerRequest> submitted = normalizeAnswers(request.answers());
         Set<Long> questionIds = questions.stream().map(ArithmeticQuestionRepository.PracticeQuestionProjection::getQuestionId).collect(Collectors.toSet());
         if (!questionIds.containsAll(submitted.keySet())) {
+            Set<Long> rejectedIds = new LinkedHashSet<>(submitted.keySet());
+            rejectedIds.removeAll(questionIds);
+            log.warn("[PRACTICE_ATTEMPT] Submitted IDs outside resolved set: {}", rejectedIds);
             throw new IllegalArgumentException("One or more submitted question IDs do not belong to this practice set.");
         }
 
