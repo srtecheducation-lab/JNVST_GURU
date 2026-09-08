@@ -65,6 +65,27 @@ public interface ArithmeticQuestionRepository extends JpaRepository<ArithmeticQu
             @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty,
             Pageable pageable);
 
+    @Query("""
+            select a.questionId as questionId,
+                   a.questionType as questionType,
+                   b.questionText as questionText,
+                   b.optionA as optionA,
+                   b.optionB as optionB,
+                   b.optionC as optionC,
+                   b.optionD as optionD,
+                   a.difficulty as difficulty
+            from ArithmeticQuestionEntity a
+            join a.question q
+            join q.bengaliContent b
+            where q.status = com.jnvstguru.jnvst_guru_backend.domain.QuestionStatus.ACTIVE
+              and (:questionType is null or a.questionType = :questionType)
+              and (:difficulty is null or a.difficulty = :difficulty)
+            """)
+    Page<StudentArithmeticQuestionProjection> findActiveStudentQuestionsInBengali(
+            @Param("questionType") ArithmeticQuestionEnums.QuestionType questionType,
+            @Param("difficulty") ArithmeticQuestionEnums.Difficulty difficulty,
+            Pageable pageable);
+
     Page<ArithmeticQuestionEntity> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
     Page<ArithmeticQuestionEntity> findByStatusOrderByCreatedAtDesc(ArithmeticQuestionEnums.Status status, Pageable pageable);

@@ -26,6 +26,11 @@ public final class ArithmeticQuestionEnums {
         HARD
     }
 
+    public enum Language {
+        ENGLISH,
+        BENGALI
+    }
+
     public enum Status {
         ACTIVE,
         INACTIVE,

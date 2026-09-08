@@ -25,6 +25,7 @@ public class ArithmeticQuestionService {
 
     @Transactional(readOnly = true)
     public Page<StudentArithmeticQuestionResponse> getStudentQuestions(
+            ArithmeticQuestionEnums.Language language,
             ArithmeticQuestionEnums.QuestionType questionType,
             ArithmeticQuestionEnums.Difficulty difficulty,
             Pageable pageable) {
@@ -32,7 +33,15 @@ public class ArithmeticQuestionService {
             throw new IllegalArgumentException("page must be non-negative and size must not exceed 100");
         }
 
-        return arithmeticQuestionRepository.findActiveStudentQuestions(questionType, difficulty, pageable)
+        ArithmeticQuestionEnums.Language selectedLanguage = language == null
+                ? ArithmeticQuestionEnums.Language.ENGLISH
+                : language;
+        Page<ArithmeticQuestionRepository.StudentArithmeticQuestionProjection> questions =
+                selectedLanguage == ArithmeticQuestionEnums.Language.BENGALI
+                        ? arithmeticQuestionRepository.findActiveStudentQuestionsInBengali(questionType, difficulty, pageable)
+                        : arithmeticQuestionRepository.findActiveStudentQuestions(questionType, difficulty, pageable);
+
+        return questions
                 .map(question -> new StudentArithmeticQuestionResponse(
                         question.getQuestionId(),
                         question.getQuestionType(),

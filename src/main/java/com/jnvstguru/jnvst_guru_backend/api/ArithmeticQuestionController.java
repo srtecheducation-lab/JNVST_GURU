@@ -32,10 +32,11 @@ public class ArithmeticQuestionController {
 
     @GetMapping("/student/arithmetic-questions")
     public ResponseEntity<Page<StudentArithmeticQuestionResponse>> getStudentQuestions(
+            @RequestParam(required = false) ArithmeticQuestionEnums.Language language,
             @RequestParam(required = false) ArithmeticQuestionEnums.QuestionType questionType,
             @RequestParam(required = false) ArithmeticQuestionEnums.Difficulty difficulty,
             @PageableDefault(size = 20, sort = "questionId") Pageable pageable) {
-        return ResponseEntity.ok(arithmeticQuestionService.getStudentQuestions(questionType, difficulty, pageable));
+        return ResponseEntity.ok(arithmeticQuestionService.getStudentQuestions(language, questionType, difficulty, pageable));
     }
 
     @GetMapping("/arithmetic-questions")
