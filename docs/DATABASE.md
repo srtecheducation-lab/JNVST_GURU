@@ -5,6 +5,7 @@
 - 2026-09-03: Added Flyway V8 multilingual question content and language-specific passage relationships for English, Hindi, and Bengali.
 - 2026-09-03: Added Flyway V9 `paper_questions.batch_question_key` with a per-paper uniqueness constraint.
 - 2026-09-07: Added Flyway V11 practice-attempt and historical answer tables.
+- 2026-09-09: Added Flyway V13 independent MAT topics, translations, and image-based questions. The former question-backed MAT table is preserved as `mat_questions_legacy`.
 - 2026-09-02: Added the JPA/domain mapping status for the finalized question-bank entities and shared-primary-key relationships; no schema or migration changes were made.
 - 2026-09-02: Added simple Spring Data JPA CRUD repositories for the seven question-bank entities; no schema or migration changes were made.
 - 2026-09-02: Added read-only question-bank services for question lookup, paper lookup, and paper-question retrieval; no schema or migration changes were made.
@@ -15,7 +16,7 @@
 ## Status
 - Database direction: PostgreSQL
 - Migration system: Flyway
-- Migration status: V1 through V8 are present; V8 adds the multilingual question-bank structure
+- Migration status: V1 through V13 are present; V13 adds the independent MAT question system
 - Scope: Foundation database design for user access, subscriptions, state/district master data, arithmetic question content, MAT/language question support, and paper metadata
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
@@ -37,8 +38,9 @@ The following Flyway migrations are present in the repository and have been appl
 | V8 | English, Hindi, and Bengali question content, passages, and language-question relationships |
 | V9 | Batch question keys on paper-question occurrences |
 | V11 | Practice attempts and historical attempt answers |
+| V13 | Independent MAT topics, topic translations, and image-based MAT questions |
 
-The applied schema is authoritative for the current backend. JPA entity mappings and repositories cover the multilingual question-bank tables. Subject tables retain metadata such as `correct_option`; localized question text and options live in the language-specific question tables. The broader tables later in this document (subjects, topics, practice, mock tests, media, and payments) remain design/planning material unless listed above.
+The applied schema is authoritative for the current backend. MAT is intentionally detached from `application.questions`: MAT questions are image-based and have their own identity/content model. The former question-backed table is retained as `application.mat_questions_legacy` so no existing rows are dropped. MAT topic metadata is localized in `mat_topic_translations`; question images are stored externally and only their URLs are persisted.
 
 Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Answer rows store both the selected option and the historical correct-option snapshot.
 

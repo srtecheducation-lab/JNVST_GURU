@@ -42,9 +42,6 @@ public class QuestionEntity {
     private ArithmeticQuestionEntity arithmeticQuestion;
 
     @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)
-    private MatQuestionEntity matQuestion;
-
-    @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)
     private LanguageQuestionEntity languageQuestion;
 
     @OneToOne(mappedBy = "question", fetch = FetchType.LAZY)

@@ -3,6 +3,7 @@
 ## Update log
 - 2026-08-30: Added documentation references and clarified the decision log structure so new technical choices are easier to record.
 - 2026-08-30: Recorded the final database design decision set and confirmed the successful Flyway foundation migration state for the auth, user, and subscription schema.
+- 2026-09-09: Chose an independent image-based MAT question model and preserved the previous question-backed table as legacy data.
 
 Status: Implemented foundational decisions, with future decisions added only when required.
 
@@ -96,6 +97,12 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Decision: Store every submission as a new attempt and snapshot the correct option in each attempt answer.
 - Reason: Result, review, and progress must remain stable even when the question bank changes; completion is evaluated against the exact practice selection.
 - Consequences: Re-attempts are never updates, and latest-attempt lookup is explicitly separate from set-status lookup.
+
+## BD-013: Independent MAT question identity
+- Date: 2026-09-09
+- Decision: MAT questions use `mat_questions.id` and must not create or reference rows in the generic `questions` table.
+- Reason: MAT source material is image-based, with one question image and four option images, so its content and identity model differ from text-based Arithmetic and Language questions.
+- Consequences: MAT has separate topics/translations, image URL fields, APIs, and CRUD/import-ready payloads. Existing question-backed MAT rows are retained in `mat_questions_legacy`.
 
 ## Document status legend
 - Implemented: Already created and working in the project.

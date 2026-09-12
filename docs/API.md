@@ -8,9 +8,10 @@
 - 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
 - 2026-09-04: Added the ADMIN-only Google Drive English Arithmetic import endpoint.
 - 2026-09-07: Added authenticated student practice-attempt submission, set status, and latest-attempt review endpoints.
+- 2026-09-09: Added student MAT topic/question retrieval and teacher/admin MAT image-question CRUD endpoints.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
 
-Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, and the initial Arithmetic Question Bank are implemented and validated. The MAT/language/paper tables are present in Flyway-backed schema support, but their REST endpoints are not yet exposed.
+Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, Arithmetic, and independent MAT retrieval/CRUD are implemented and validated.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -19,6 +20,20 @@ Status: Core foundation, authenticated identity, Student Profile, reference-stat
 - [DATABASE.md](DATABASE.md) — persistence design notes
 - [DEVELOPMENT.md](DEVELOPMENT.md) — local workflow and command references
 - [DECISIONS.md](DECISIONS.md) — API-related design decisions
+
+### MAT Question Bank
+MAT is independent from the generic `questions` API because its content is image-based.
+
+```http
+GET    /api/v1/student/mat-topics?language=en
+GET    /api/v1/student/mat-questions?topicId=1
+GET    /api/v1/mat-questions?topicId=1&active=true
+POST   /api/v1/mat-questions
+PUT    /api/v1/mat-questions/{id}
+DELETE /api/v1/mat-questions/{id}
+```
+
+MAT question requests contain `topicId`, one `questionImageUrl`, four option image URLs, `correctOption` (`A`-`D`), optional `difficulty`, `active`, and `sortOrder`. Student responses never expose `correctOption`; teacher/admin responses do. Image files remain in the configured external file store and only references/URLs are persisted.
 
 ## Versioning
 All API paths use the version prefix:

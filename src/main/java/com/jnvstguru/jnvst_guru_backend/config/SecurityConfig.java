@@ -67,8 +67,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/me/**").authenticated()
                         .requestMatchers("/api/v1/student-profiles/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .requestMatchers("/api/v1/student/arithmetic-questions/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
+                        .requestMatchers("/api/v1/student/mat-topics/**", "/api/v1/student/mat-questions/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .requestMatchers("/api/v1/student/practice-attempts/**").hasRole("STUDENT")
                         .requestMatchers("/api/v1/arithmetic-questions/**").hasAnyRole("TEACHER", "ADMIN")
+                        .requestMatchers("/api/v1/mat-questions/**").hasAnyRole("TEACHER", "ADMIN")
                         .requestMatchers("/api/v1/subscriptions/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));

@@ -9,7 +9,7 @@
 - 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
 - 2026-08-30: Updated the backend implementation plan to AUTHENTICATION OPTION A: Android handles Supabase Auth; Spring Boot validates the Supabase JWT as a resource server and manages only application/business data.
 
-Status: Implemented foundation, active JWT resource-server access, Student Profile APIs, state/district reference data, the initial Arithmetic Question Bank, and the Flyway-backed database-layer support for MAT, language content, and paper metadata. The current API surface remains intentionally limited to the implemented modules.
+Status: Implemented foundation, active JWT resource-server access, Student Profile APIs, state/district reference data, Arithmetic, and the independent MAT module.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -35,7 +35,7 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - Spring Security acts as a JWT resource server validated against the Supabase issuer and JWKS.
 - Protected endpoints include `/api/v1/me`, `/api/v1/student-profiles/me`, `/api/v1/student-profiles`, `/api/v1/reference/states`, `/api/v1/reference/states/{stateId}/districts`, and the arithmetic question CRUD routes.
 - The project remains intentionally minimal and avoids premature abstractions.
-- The database layer now includes a shared `questions` identity model along with MAT, language, and paper tables, but the corresponding API surface is still intentionally staged.
+- Arithmetic and Language continue using the generic `questions` architecture. MAT is intentionally independent: `mat_topics` -> `mat_topic_translations` and `mat_questions`, because image-based MAT content has its own identity and storage references.
 - Google Drive access is isolated in `GoogleDriveService`; it downloads private files by `fileId` into an `InputStream` and is not connected to persistence or import logic.
 
 ## Architectural principles

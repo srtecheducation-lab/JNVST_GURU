@@ -1,10 +1,7 @@
 package com.jnvstguru.jnvst_guru_backend.api.dto;
 
-import java.time.OffsetDateTime;
-
-public record MatQuestionResponse(
+public record StudentMatQuestionResponse(
         Long id, Long topicId, String questionImageUrl, String optionAImageUrl,
         String optionBImageUrl, String optionCImageUrl, String optionDImageUrl,
-        String correctOption, String difficulty, boolean active, Integer sortOrder,
-        OffsetDateTime createdAt, OffsetDateTime updatedAt
+        String difficulty
 ) {}
