@@ -11,6 +11,9 @@ public interface MatQuestionRepository extends JpaRepository<MatQuestionEntity, 
     boolean existsByOptionAImageUrl(String optionAImageUrl);
     Page<MatQuestionEntity> findByActiveTrueOrderBySortOrderAscIdAsc(Pageable pageable);
     Page<MatQuestionEntity> findByTopicIdAndActiveTrueOrderBySortOrderAscIdAsc(Long topicId, Pageable pageable);
+    Page<MatQuestionEntity> findByDifficultyAndActiveTrueOrderBySortOrderAscIdAsc(String difficulty, Pageable pageable);
+    Page<MatQuestionEntity> findByTopicIdAndDifficultyAndActiveTrueOrderBySortOrderAscIdAsc(
+            Long topicId, String difficulty, Pageable pageable);
     Page<MatQuestionEntity> findByOrderBySortOrderAscIdAsc(Pageable pageable);
     Page<MatQuestionEntity> findByTopicIdOrderBySortOrderAscIdAsc(Long topicId, Pageable pageable);
 }

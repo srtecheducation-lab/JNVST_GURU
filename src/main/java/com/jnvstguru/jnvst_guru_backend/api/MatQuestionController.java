@@ -26,8 +26,9 @@ public class MatQuestionController {
     @GetMapping("/student/mat-questions")
     public Page<StudentMatQuestionResponse> studentQuestions(
             @RequestParam(required = false) Long topicId,
+            @RequestParam(required = false) String difficulty,
             @PageableDefault(size = 20) Pageable pageable) {
-        return service.studentQuestions(topicId, pageable);
+        return service.studentQuestions(topicId, difficulty, pageable);
     }
 
     @GetMapping("/mat-questions")

@@ -21,11 +21,20 @@ public class MatQuestionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<StudentMatQuestionResponse> studentQuestions(Long topicId, Pageable pageable) {
+    public Page<StudentMatQuestionResponse> studentQuestions(Long topicId, String difficulty, Pageable pageable) {
         validatePage(pageable);
-        Page<MatQuestionEntity> page = topicId == null
-                ? questions.findByActiveTrueOrderBySortOrderAscIdAsc(pageable)
-                : questions.findByTopicIdAndActiveTrueOrderBySortOrderAscIdAsc(topicId, pageable);
+        String selectedDifficulty = difficulty == null || difficulty.isBlank() ? null : difficulty.trim();
+        Page<MatQuestionEntity> page;
+        if (topicId == null && selectedDifficulty == null) {
+            page = questions.findByActiveTrueOrderBySortOrderAscIdAsc(pageable);
+        } else if (topicId == null) {
+            page = questions.findByDifficultyAndActiveTrueOrderBySortOrderAscIdAsc(selectedDifficulty, pageable);
+        } else if (selectedDifficulty == null) {
+            page = questions.findByTopicIdAndActiveTrueOrderBySortOrderAscIdAsc(topicId, pageable);
+        } else {
+            page = questions.findByTopicIdAndDifficultyAndActiveTrueOrderBySortOrderAscIdAsc(
+                    topicId, selectedDifficulty, pageable);
+        }
         return page.map(this::toStudentResponse);
     }
 
