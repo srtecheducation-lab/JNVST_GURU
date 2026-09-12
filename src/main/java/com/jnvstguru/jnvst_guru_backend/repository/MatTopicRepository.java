@@ -10,6 +10,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MatTopicRepository extends JpaRepository<MatTopicEntity, Long> {
+    java.util.Optional<MatTopicEntity> findByCode(String code);
     @Query(value = """
         select t.id as id, t.code as code, t.sort_order as sortOrder,
                coalesce(p.name, e.name) as name,

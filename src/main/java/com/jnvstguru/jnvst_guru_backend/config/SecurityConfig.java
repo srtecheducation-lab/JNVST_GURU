@@ -73,7 +73,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/mat-questions/**").hasAnyRole("TEACHER", "ADMIN")
                         .requestMatchers("/api/v1/subscriptions/**").hasAnyRole("STUDENT", "TEACHER", "ADMIN")
                         .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
 
         return http.build();
     }

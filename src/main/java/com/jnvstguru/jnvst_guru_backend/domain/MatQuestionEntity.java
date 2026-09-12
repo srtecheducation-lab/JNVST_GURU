@@ -11,7 +11,7 @@ public class MatQuestionEntity {
     private Long id;
     @ManyToOne(optional = false) @JoinColumn(name = "topic_id", nullable = false)
     private MatTopicEntity topic;
-    @Column(name = "question_image_url", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "question_image_url", nullable = true, columnDefinition = "TEXT")
     private String questionImageUrl;
     @Column(name = "option_a_image_url", nullable = false, columnDefinition = "TEXT")
     private String optionAImageUrl;
