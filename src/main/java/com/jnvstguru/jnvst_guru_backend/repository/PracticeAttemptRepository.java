@@ -49,7 +49,6 @@ public interface PracticeAttemptRepository extends JpaRepository<PracticeAttempt
     PracticeAttemptEntity findFirstByUserAndPracticeModeAndSubjectAndTopicIdAndDifficultyAndPageNumberOrderBySubmittedAtDescIdDesc(
             UserEntity user, PracticeMode practiceMode, PracticeSubject subject, Long topicId,
             ArithmeticQuestionEnums.Difficulty difficulty, Integer pageNumber);
-
     @Query("""
             select a from PracticeAttemptEntity a
             where a.user = :user and a.practiceMode = :mode and a.subject = :subject

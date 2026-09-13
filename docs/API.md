@@ -6,7 +6,7 @@
 - 2026-09-02: Added the authenticated subscriptions endpoint to keep the API contract aligned with the implemented controller.
 - 2026-09-02: Added read-only question and paper endpoints for reusable question lookup, paper listing, and paper-question occurrences.
 - 2026-09-02: Added description of the normalized State/District model and the `stateId` / `districtId` contract for student profiles.
-- 2026-09-02: Clarified that MAT, Language, and paper tables exist at the schema/database layer, but their public REST APIs remain intentionally out of scope.
+- 2026-09-13: Added the student Language question retrieval endpoint backed by independent per-language question identities.
 - 2026-09-04: Added the ADMIN-only Google Drive English Arithmetic import endpoint.
 - 2026-09-07: Added authenticated student practice-attempt submission, set status, and latest-attempt review endpoints.
 - 2026-09-09: Added student MAT topic/question retrieval and teacher/admin MAT image-question CRUD endpoints.
@@ -379,18 +379,79 @@ MAT submissions resolve active questions from `mat_questions`, use
 `mat_questions.id` and `correct_option`, and store review snapshots in the
 existing practice-attempt answer table without using generic `questions`.
 
+## Student Language questions
+Language content is selected independently by language and batch. Matching
+question numbers across languages do not identify the same question. `size`
+controls the number of passages, not the number of questions; each passage
+contains its five questions.
+
+```http
+GET /api/v1/student/language-questions?language=ENGLISH&page=0&size=1
+GET /api/v1/student/language-questions?language=BENGALI&page=0&size=4
+```
+
+`batchNo` is not required. The service selects active content for the requested
+language, using active questions as the existing active-content convention.
+Passages are ordered by `passage_number ASC, id ASC`; questions inside each
+passage are ordered by `question_number ASC, id ASC`. The response is
+passage-oriented:
+
+```json
+{
+  "content": [
+    {
+      "passageId": 1,
+      "passageNumber": 1,
+      "passageText": "Passage text",
+      "questions": [
+        {
+          "questionId": 101,
+          "questionNumber": 1,
+          "questionText": "Question text",
+          "optionA": "A",
+          "optionB": "B",
+          "optionC": "C",
+          "optionD": "D"
+        }
+      ]
+    }
+  ]
+}
+```
+
+`correctOption` and `explanation` are never returned by this student test-fetch
+API. There is no language fallback or difficulty filter. Language
+practice-attempt endpoints are not currently defined; the existing
+practice-attempt API remains Arithmetic/MAT only.
+
+### Google Drive Language import
+Admins can import available Language CSV files from a batch folder:
+
+```http
+POST /api/v1/admin/import/google-drive/language
+Content-Type: application/json
+
+{"folderId":"<google-drive-batch-folder-id>"}
+```
+
+The batch folder name becomes `batchNo`. Direct children matching
+`P001_en.csv` through `P004_bn.csv` are processed; unrelated files and folders
+are ignored. The response reports processed files, imported and skipped
+questions, failed files, missing expected files, and validation/database
+errors. Each CSV is validated and committed independently, so a failed file
+does not leave a partial passage or question set.
+
 ## Planned endpoints
-- Language passage/question APIs
 - Subject and topic catalog endpoints
 - Mock test endpoints
 - Student progress endpoints
 
 ## Database-only models currently present
-The following tables are present in the Flyway-backed schema, but their REST APIs are intentionally not implemented yet:
+The following tables are present in the Flyway-backed schema without public
+REST APIs:
 
 - `application.questions`
-- `application.language_passages`
-- `application.language_questions`
+- legacy question-bank tables retained by migration V18
 
 ## API conventions
 - Use DTOs instead of exposing JPA entities directly.

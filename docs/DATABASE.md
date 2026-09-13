@@ -1,7 +1,8 @@
 # JNVST GURU Database Design
 
 ## Update log
-- 2026-09-13: Updated the applied migration inventory through V17 and documented MAT practice-attempt constraints plus language-specific MAT explanations.
+- 2026-09-13: Added V19 to make Language question difficulty nullable because Language has no difficulty.
+- 2026-09-13: Added V18 independent Language passages and questions, with language-owned identities separate from the generic question hierarchy.
 - 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
 - 2026-09-03: Added Flyway V8 multilingual question content and language-specific passage relationships for English, Hindi, and Bengali.
 - 2026-09-03: Added Flyway V9 `paper_questions.batch_question_key` with a per-paper uniqueness constraint.
@@ -18,7 +19,7 @@
 ## Status
 - Database direction: PostgreSQL
 - Migration system: Flyway
-- Migration status: V1 through V17 are present; V13-V17 complete the independent MAT question, practice-attempt, and review-explanation support
+- Migration status: V1 through V18 are applied; V19 is the new migration required for Language's no-difficulty schema and importer support
 - Scope: Implemented database design for user access, subscriptions, state/district master data, Arithmetic question content, independent MAT question content, practice attempts, language explanations, and paper metadata
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
@@ -46,6 +47,8 @@ The following Flyway migrations are present in the repository and are the source
 | V15 | Add MAT practice-attempt references and answer-source constraints |
 | V16 | Allow MAT SUBJECT practice attempts alongside MAT TOPIC attempts |
 | V17 | Language-specific MAT question explanations and lookup index |
+| V18 | Independent Language passages and questions per language and batch |
+| V19 | Remove the Language question difficulty requirement and update its ordering index |
 
 The applied schema is authoritative for the current backend. MAT is intentionally detached from `application.questions`: MAT questions are image-based and have their own identity/content model. The former question-backed table is retained as `application.mat_questions_legacy` so no existing rows are dropped. MAT topic metadata is localized in `mat_topic_translations`; question images are stored externally and only their URLs are persisted.
 
@@ -530,16 +533,57 @@ Index:
 The table is used by the existing latest-practice-attempt response only. It is
 not joined into the normal MAT question retrieval response.
 
-### language_passages
+### language_passages (V18)
 | Column | Type | Notes |
 | --- | --- | --- |
-| id | BIGINT PK | Generated identity |
-| passage_text | TEXT NOT NULL | Passage content |
+| id | BIGINT PK | Independent passage identity |
+| language_code | VARCHAR(10) NOT NULL | `en`, `hi`, or `bn` |
+| batch_no | VARCHAR(60) NOT NULL | Import/content batch |
+| passage_number | INTEGER NOT NULL | 1 through 4 within a language/batch |
+| passage_text | TEXT NOT NULL | Language-specific passage content |
 | created_at | TIMESTAMPTZ | Audit |
 | updated_at | TIMESTAMPTZ | Audit |
 
-### language_questions
-This table stores language-specific question content and optionally links to a passage. It has `question_id`, `passage_id`, `question_text`, four answer options, `correct_option`, `difficulty`, `explanation`, and audit timestamps.
+Unique constraint:
+- `(language_code, batch_no, passage_number)`
+
+### language_questions (V18)
+This table stores independently authored language questions. It does not
+reference `application.questions`; matching question numbers across English,
+Hindi, and Bengali are not the same question identity.
+
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Independent question identity |
+| language_code | VARCHAR(10) NOT NULL | `en`, `hi`, or `bn` |
+| batch_no | VARCHAR(60) NOT NULL | Import/content batch |
+| passage_id | BIGINT NOT NULL | FK to the same-language/batch passage |
+| question_number | INTEGER NOT NULL | 1 through 20 within a language/batch |
+| question_text | TEXT NOT NULL | Language-specific text |
+| option_a / option_b / option_c / option_d | TEXT NOT NULL | Language-specific options |
+| correct_option | VARCHAR(1) NOT NULL | Answer retained server-side |
+| difficulty | VARCHAR(20) | Reserved nullable column; Language importer does not populate it |
+| explanation | TEXT | Optional language-specific explanation |
+| is_active | BOOLEAN NOT NULL | Student visibility flag |
+| created_at / updated_at | TIMESTAMPTZ | Audit |
+
+Unique constraint:
+- `(language_code, batch_no, question_number)`
+
+The old shared Language tables are renamed with a `_legacy` suffix by V18 so
+existing data is preserved during the transition. They are not used by the new
+Language question service.
+
+Language CSV imports use the V18 independent tables only. Each imported file
+creates or reuses one `(language_code, batch_no, passage_number)` passage and
+creates independent question IDs for its five rows. V19 is required because
+Language questions do not have EASY/MEDIUM/HARD difficulty.
+
+The student Language API paginates `language_passages`, with `size` measured in
+passages. It selects passages having active questions for the requested
+language, then loads active questions by `passage_id` and returns them nested
+under each passage. Database IDs and stored passage/question numbers are
+returned directly; no identifiers are generated by the API layer.
 
 ### papers
 | Column | Type | Notes |

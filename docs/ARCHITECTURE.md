@@ -9,7 +9,8 @@ hierarchy: MAT questions use `mat_questions.id`, while Arithmetic continues
 using its existing `questions.id` references.
 
 ## Update log
-- 2026-09-13: Documented MAT subject/topic practice modes, MAT latest-review language selection, and the V17 explanation table.
+- 2026-09-13: Added the transactional Google Drive Language CSV importer and V19 no-difficulty schema adjustment.
+- 2026-09-13: Changed student Language retrieval to passage pagination with nested active questions and no required batch parameter.
 - 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
 - 2026-09-04: Added disabled-by-default, read-only Google Drive service-account integration for future stream-based Excel readers.
 - 2026-09-07: Added the student practice-attempt module with server-side set resolution and historical answer snapshots.
@@ -18,7 +19,7 @@ using its existing `questions.id` references.
 - 2026-08-30: Documented the applied Flyway migration state and confirmed the final auth-boundary and application-schema separation for the initial database setup.
 - 2026-08-30: Updated the backend implementation plan to AUTHENTICATION OPTION A: Android handles Supabase Auth; Spring Boot validates the Supabase JWT as a resource server and manages only application/business data.
 
-Status: Implemented foundation, active JWT resource-server access, Student Profile APIs, state/district reference data, Arithmetic, independent MAT retrieval/import/CRUD, and practice attempts with language-aware MAT review.
+Status: Implemented foundation, active JWT resource-server access, Student Profile APIs, state/district reference data, Arithmetic, independent MAT retrieval/import/CRUD, independent Language retrieval/import, and practice attempts with language-aware MAT review.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -45,8 +46,10 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - Protected endpoints include `/api/v1/me`, `/api/v1/student-profiles/me`, `/api/v1/student-profiles`, `/api/v1/reference/states`, `/api/v1/reference/states/{stateId}/districts`, and the arithmetic question CRUD routes.
 - MAT student/admin routes, Google Drive MAT import, and authenticated practice-attempt routes are also implemented.
 - The project remains intentionally minimal and avoids premature abstractions.
-- Arithmetic and Language continue using the generic `questions` architecture. MAT is intentionally independent: `mat_topics` -> `mat_topic_translations` and `mat_questions`, with `mat_question_explanations` for language-dependent review text, because image-based MAT content has its own identity and storage references.
+- Arithmetic continues using the generic `questions` architecture. Language uses independent `language_passages` and `language_questions` identities per language and batch. MAT is intentionally independent: `mat_topics` -> `mat_topic_translations` and `mat_questions`, with `mat_question_explanations` for language-dependent review text.
 - Google Drive access is isolated in `GoogleDriveService`; it downloads private files by `fileId` into an `InputStream` and is not connected to persistence or import logic.
+- The Language Google Drive importer lists direct batch-folder children, validates recognized CSVs, and writes each file in its own transaction to the independent Language tables. It does not upload text to storage and does not modify Arithmetic or MAT importers.
+- Student Language retrieval paginates `language_passages` by passage and batch-loads active `language_questions`, returning five-question passage groups in deterministic order. No batch-selection mechanism beyond the existing active-question flag is introduced.
 
 ## Architectural principles
 - Keep modules logically separated.
@@ -68,7 +71,7 @@ The major modules now in active use are auth, student profile, reference data, A
 ## Current constraints
 - Authentication is intentionally externalized to Supabase Auth; this backend does not implement password authentication itself.
 - The backend is now operating as a JWT Resource Server with protected authenticated endpoints.
-- The core domain phase includes Student Profile, Arithmetic, independent MAT, and practice-attempt functionality; language passage/question and payment domains remain outside the public API.
+- The core domain phase includes Student Profile, Arithmetic, independent MAT, independent Language retrieval/import, and practice-attempt functionality. Language practice attempts and payment domains remain outside the public API.
 - No event-driven or cloud-specific infrastructure is included beyond the Supabase authentication boundary.
 - Google Drive integration is infrastructure-only, read-only, and disabled unless explicitly enabled through deployment configuration.
 

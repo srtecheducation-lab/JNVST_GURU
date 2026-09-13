@@ -117,6 +117,24 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Reason: MAT images and options are language-independent, while explanations must match the student's preferred language. Separating explanations avoids changing question storage or exposing review-only content during a test.
 - Consequences: `bn` selects Bengali and `en` selects English; null or blank profile language defaults to English. The backend never falls back across languages, and missing translations are returned as null/omitted. Explanations are loaded in one batch query for the reviewed attempt.
 
+## BD-016: Independent Language question identity
+- Date: 2026-09-13
+- Decision: Store Language passages and questions in independent V18 tables keyed by language code, batch, and their own generated IDs. Do not map English, Hindi, and Bengali rows through `application.questions`.
+- Reason: Language is independently authored by language. Identical numbering such as Q001 is a position within a language/batch, not a cross-language identity.
+- Consequences: The student retrieval endpoint selects one language and batch with stable question-number ordering and never falls back to another language. V18 renames the old shared tables to legacy names without deleting their data. Language practice attempts remain future work; Arithmetic and MAT retain their existing identity models.
+
+## BD-017: Transactional Google Drive Language CSV import
+- Date: 2026-09-13
+- Decision: Import recognized `P001`-`P004` language CSV files directly from a supplied Google Drive batch folder into the independent Language tables, with one transaction per CSV.
+- Reason: A CSV represents one passage and exactly five questions. File-level transactions prevent partial passage/question sets while allowing available valid language files to import independently when a batch is incomplete.
+- Consequences: The importer validates headers, filename language/passage, question ranges, required text/options, and answer values before writing. Existing `(language_code, batch_no, question_number)` rows are skipped rather than overwritten. No CSV or question text is uploaded to Supabase Storage, and no difficulty is stored for Language.
+
+## BD-018: Passage-oriented student Language retrieval
+- Date: 2026-09-13
+- Decision: The student Language endpoint paginates passages, not individual questions, and returns each selected passage with its active questions nested beneath it. `batchNo` is optional and active questions determine which passages are eligible.
+- Reason: The official Language unit is one passage with five questions. Passage pagination preserves that unit and avoids splitting a passage across pages.
+- Consequences: `size=1` returns one passage and its questions; ordering is by passage number and ID, then question number and ID. No new active-batch selection mechanism is introduced, and Arithmetic/MAT APIs are unaffected.
+
 ## Document status legend
 - Implemented: Already created and working in the project.
 - Planned: Scheduled for a later stage.

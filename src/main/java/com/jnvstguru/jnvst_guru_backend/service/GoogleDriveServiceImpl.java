@@ -46,6 +46,26 @@ public class GoogleDriveServiceImpl implements GoogleDriveService {
     }
 
     @Override
+    public DriveFile getFile(String fileId) {
+        if (fileId == null || fileId.isBlank()) {
+            throw new GoogleDriveException("Google Drive fileId must not be blank");
+        }
+        try {
+            var file = drive.files().get(fileId.trim())
+                    .setFields("id,name,mimeType")
+                    .execute();
+            return new DriveFile(file.getId(), file.getName(), file.getMimeType());
+        } catch (GoogleJsonResponseException ex) {
+            int statusCode = ex.getStatusCode();
+            if (statusCode == 404) throw new GoogleDriveException("Google Drive file was not found", ex);
+            if (statusCode == 401 || statusCode == 403) throw new GoogleDriveException("Google Drive access was denied", ex);
+            throw new GoogleDriveException("Google Drive request failed", ex);
+        } catch (IOException ex) {
+            throw new GoogleDriveException("Google Drive request failed", ex);
+        }
+    }
+
+    @Override
     public List<DriveFile> listChildren(String folderId) {
         if (folderId == null || folderId.isBlank()) {
             throw new GoogleDriveException("Google Drive folderId must not be blank");
