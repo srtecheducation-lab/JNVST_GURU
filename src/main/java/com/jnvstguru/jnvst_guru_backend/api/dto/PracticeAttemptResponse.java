@@ -22,5 +22,6 @@ public record PracticeAttemptResponse(
     }
     public record AnswerResponse(Long questionId, String selectedOption, String correctOption,
                                  boolean isCorrect,
-                                 @JsonInclude(JsonInclude.Include.NON_NULL) Long matQuestionId) {}
+                                 @JsonInclude(JsonInclude.Include.NON_NULL) Long matQuestionId,
+                                 @JsonInclude(JsonInclude.Include.NON_NULL) String explanation) {}
 }

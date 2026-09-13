@@ -1,6 +1,7 @@
 # JNVST GURU Database Design
 
 ## Update log
+- 2026-09-13: Updated the applied migration inventory through V17 and documented MAT practice-attempt constraints plus language-specific MAT explanations.
 - 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
 - 2026-09-03: Added Flyway V8 multilingual question content and language-specific passage relationships for English, Hindi, and Bengali.
 - 2026-09-03: Added Flyway V9 `paper_questions.batch_question_key` with a per-paper uniqueness constraint.
@@ -17,15 +18,15 @@
 ## Status
 - Database direction: PostgreSQL
 - Migration system: Flyway
-- Migration status: V1 through V13 are present; V13 adds the independent MAT question system
-- Scope: Foundation database design for user access, subscriptions, state/district master data, arithmetic question content, MAT/language question support, and paper metadata
+- Migration status: V1 through V17 are present; V13-V17 complete the independent MAT question, practice-attempt, and review-explanation support
+- Scope: Implemented database design for user access, subscriptions, state/district master data, Arithmetic question content, independent MAT question content, practice attempts, language explanations, and paper metadata
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
 - Flyway metadata schema: `public` by default unless explicitly overridden
 
 ## Implemented schema status
 
-The following Flyway migrations are present in the repository and have been applied successfully:
+The following Flyway migrations are present in the repository and are the source of truth for the applied schema:
 
 | Migration | Scope |
 | --- | --- |
@@ -39,11 +40,23 @@ The following Flyway migrations are present in the repository and have been appl
 | V8 | English, Hindi, and Bengali question content, passages, and language-question relationships |
 | V9 | Batch question keys on paper-question occurrences |
 | V11 | Practice attempts and historical attempt answers |
+| V12 | Practice-question filtering indexes |
 | V13 | Independent MAT topics, topic translations, and image-based MAT questions |
+| V14 | Allow nullable MAT question image URLs |
+| V15 | Add MAT practice-attempt references and answer-source constraints |
+| V16 | Allow MAT SUBJECT practice attempts alongside MAT TOPIC attempts |
+| V17 | Language-specific MAT question explanations and lookup index |
 
 The applied schema is authoritative for the current backend. MAT is intentionally detached from `application.questions`: MAT questions are image-based and have their own identity/content model. The former question-backed table is retained as `application.mat_questions_legacy` so no existing rows are dropped. MAT topic metadata is localized in `mat_topic_translations`; question images are stored externally and only their URLs are persisted.
 
-Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Arithmetic attempts retain their existing `questions.id` answer reference. MAT attempts use `question_source = MAT` and `mat_question_id` referencing `mat_questions.id`; `topic_id` stores the MAT topic ID. Answer rows store both the selected option and the historical correct-option snapshot.
+Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Arithmetic attempts retain their existing `questions.id` answer reference. MAT attempts use `question_source = MAT` and `mat_question_id` referencing `mat_questions.id`; `topic_id` stores the MAT topic ID for TOPIC mode and is null for SUBJECT mode. Answer rows store both the selected option and the historical correct-option snapshot.
+
+MAT explanations are stored separately in `application.mat_question_explanations`
+because MAT images and options are language-independent while explanations are
+language-dependent. Each row stores one explanation for one MAT question and
+language code (`en` or `bn`), with a unique `(mat_question_id, language_code)`
+constraint. The latest-attempt review selects only the student's preferred
+language; it does not fall back to another language.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -102,6 +115,9 @@ This keeps the schema simpler for Java/JPA usage and avoids a mixed UUID/BIGINT 
 - `language_question_english`, `language_question_hindi`, `language_question_bengali`
 - `papers`
 - `paper_questions`
+- `practice_attempts`
+- `practice_attempt_answers`
+- `mat_question_explanations`
 
 ### 4. Academic content
 - `subjects`
@@ -439,13 +455,80 @@ second `questions` record.
 ### mat_questions
 | Column | Type | Notes |
 | --- | --- | --- |
-| question_id | BIGINT PK/FK -> questions.id | Shared question identity |
-| question_text | TEXT | Nullable prompt |
+| id | BIGINT PK | Generated identity |
+| topic_id | BIGINT NOT NULL FK -> mat_topics.id | MAT topic |
+| question_image_url | TEXT | External image reference |
+| option_a_image_url | TEXT NOT NULL | External image reference |
+| option_b_image_url | TEXT NOT NULL | External image reference |
+| option_c_image_url | TEXT NOT NULL | External image reference |
+| option_d_image_url | TEXT NOT NULL | External image reference |
 | correct_option | VARCHAR(1) | A, B, C, or D |
-| difficulty | VARCHAR(30) | Difficulty level |
-| explanation | TEXT | Nullable |
+| difficulty | VARCHAR(30) | EASY, MEDIUM, or HARD |
+| is_active | BOOLEAN | Soft-active flag |
+| sort_order | INTEGER | Stable practice ordering |
 | created_at | TIMESTAMPTZ | Audit |
 | updated_at | TIMESTAMPTZ | Audit |
+
+MAT questions are independent from `application.questions`. Question and option
+images are language-independent and are stored outside PostgreSQL; only their
+URLs are persisted.
+
+### practice_attempts
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| user_id | BIGINT NOT NULL FK -> users.id | Authenticated application user |
+| practice_mode | VARCHAR(20) NOT NULL | SUBJECT or TOPIC |
+| subject | VARCHAR(40) NOT NULL | ARITHMETIC or MAT |
+| topic | VARCHAR(40) | Arithmetic topic; null for MAT |
+| topic_id | BIGINT | MAT topic; required for MAT TOPIC mode |
+| difficulty | VARCHAR(20) NOT NULL | Requested difficulty |
+| page_number | INTEGER NOT NULL | Zero-based set page |
+| question_count | INTEGER NOT NULL | Resolved set size |
+| score | INTEGER NOT NULL | Correct answers |
+| correct_count | INTEGER NOT NULL | Correct answers |
+| wrong_count | INTEGER NOT NULL | Wrong answers |
+| unanswered_count | INTEGER NOT NULL | Unanswered questions |
+| submitted_at | TIMESTAMPTZ NOT NULL | Submission timestamp |
+
+Attempts are append-only. Arithmetic SUBJECT/TOPIC attempts use the existing
+`topic` enum field; MAT SUBJECT attempts have a null `topic_id`, while MAT
+TOPIC attempts store the selected MAT topic.
+
+### practice_attempt_answers
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| attempt_id | BIGINT NOT NULL FK -> practice_attempts.id | Owning attempt |
+| question_id | BIGINT | Arithmetic question reference |
+| mat_question_id | BIGINT | MAT question reference |
+| question_source | VARCHAR(20) NOT NULL | ARITHMETIC or MAT |
+| selected_option | VARCHAR(1) | A, B, C, D, or null |
+| correct_option | VARCHAR(1) NOT NULL | Historical answer snapshot |
+| is_correct | BOOLEAN NOT NULL | Scored result |
+
+Exactly one of `question_id` and `mat_question_id` is populated according to
+`question_source`. This preserves the existing Arithmetic answer structure
+while supporting independent MAT question identity.
+
+### mat_question_explanations
+| Column | Type | Notes |
+| --- | --- | --- |
+| id | BIGINT PK | Generated identity |
+| mat_question_id | BIGINT NOT NULL FK -> mat_questions.id | MAT question |
+| language_code | VARCHAR(10) NOT NULL | `en` or `bn` |
+| explanation | TEXT NOT NULL | Language-specific review explanation |
+| created_at | TIMESTAMPTZ | Audit |
+| updated_at | TIMESTAMPTZ | Audit |
+
+Unique constraint:
+- `(mat_question_id, language_code)`
+
+Index:
+- `(language_code, mat_question_id)`
+
+The table is used by the existing latest-practice-attempt response only. It is
+not joined into the normal MAT question retrieval response.
 
 ### language_passages
 | Column | Type | Notes |
@@ -806,7 +889,11 @@ Recommended data integrity rules:
 
 ## Migration review status
 
-The initial Flyway implementation is complete through V7. The applied migrations are the source of truth for the current backend schema; this document's subjects, topics, media, practice, mock-test, and payment sections describe planned future extensions and are not currently migrated.
+The applied Flyway implementation is complete through V17. The applied
+migrations are the source of truth for the current backend schema. The
+subjects, topics, media, generic practice-session, mock-test, and payment
+sections that are not represented by V1-V17 describe planned future
+extensions, not current tables.
 
 When extending the schema:
 - Add a new versioned Flyway migration; do not edit an applied migration.

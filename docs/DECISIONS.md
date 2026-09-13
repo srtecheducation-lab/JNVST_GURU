@@ -1,6 +1,7 @@
 # Architectural Decisions
 
 ## Update log
+- 2026-09-13: Recorded the independent language-specific MAT explanation model and latest-review-only response behavior.
 - 2026-08-30: Added documentation references and clarified the decision log structure so new technical choices are easier to record.
 - 2026-08-30: Recorded the final database design decision set and confirmed the successful Flyway foundation migration state for the auth, user, and subscription schema.
 - 2026-09-09: Chose an independent image-based MAT question model and preserved the previous question-backed table as legacy data.
@@ -109,6 +110,12 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Decision: Preserve Arithmetic practice answers in `question_id` and add a source-discriminated `mat_question_id` reference for MAT attempts.
 - Reason: MAT questions are independent from `application.questions`, so a single generic foreign key cannot safely represent both subjects.
 - Consequences: Arithmetic requests and stored attempts remain backward-compatible. MAT uses `topic_id`, `mat_questions.id`, and `question_source = MAT`; both subjects share the existing attempt and review APIs.
+
+## BD-015: Language-specific MAT explanations in latest review
+- Date: 2026-09-13
+- Decision: Store MAT explanations in `mat_question_explanations` keyed by MAT question ID and language code, and return them only from the existing latest-attempt review response.
+- Reason: MAT images and options are language-independent, while explanations must match the student's preferred language. Separating explanations avoids changing question storage or exposing review-only content during a test.
+- Consequences: `bn` selects Bengali and `en` selects English; null or blank profile language defaults to English. The backend never falls back across languages, and missing translations are returned as null/omitted. Explanations are loaded in one batch query for the reviewed attempt.
 
 ## Document status legend
 - Implemented: Already created and working in the project.

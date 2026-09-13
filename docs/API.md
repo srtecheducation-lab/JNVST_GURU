@@ -1,6 +1,7 @@
 ﻿# API
 
 ## Update log
+- 2026-09-13: Documented MAT subject/topic practice, latest-review explanations selected by student preferred language, and the current MAT import endpoints.
 - 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, arithmetic CRUD/filter endpoints, and the current Flyway-backed schema additions.
 - 2026-09-02: Added the authenticated subscriptions endpoint to keep the API contract aligned with the implemented controller.
 - 2026-09-02: Added read-only question and paper endpoints for reusable question lookup, paper listing, and paper-question occurrences.
@@ -11,7 +12,7 @@
 - 2026-09-09: Added student MAT topic/question retrieval and teacher/admin MAT image-question CRUD endpoints.
 - 2026-08-30: Added documentation links and refined the API overview section to keep the status and contract notes easier to maintain.
 
-Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, Arithmetic, and independent MAT retrieval/CRUD are implemented and validated.
+Status: Core foundation, authenticated identity, Student Profile, reference-state/district data, Arithmetic, independent MAT retrieval/import/CRUD, and practice attempts are implemented and validated.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -31,9 +32,10 @@ GET    /api/v1/mat-questions?topicId=1&active=true
 POST   /api/v1/mat-questions
 PUT    /api/v1/mat-questions/{id}
 DELETE /api/v1/mat-questions/{id}
+POST   /api/v1/admin/import/google-drive/mat
 ```
 
-MAT question requests contain `topicId`, one `questionImageUrl`, four option image URLs, `correctOption` (`A`-`D`), optional `difficulty`, `active`, and `sortOrder`. Student responses never expose `correctOption`; teacher/admin responses do. Image files remain in the configured external file store and only references/URLs are persisted.
+MAT question requests contain `topicId`, one `questionImageUrl`, four option image URLs, `correctOption` (`A`-`D`), optional `difficulty`, `active`, and `sortOrder`. Student responses never expose `correctOption`; teacher/admin responses do. Image files remain in the configured external file store and only references/URLs are persisted. MAT explanations are not returned by these question endpoints.
 
 ## Versioning
 All API paths use the version prefix:
@@ -102,7 +104,7 @@ Authorization: Bearer <supabase-access-token>
 Returns the authenticated user's subscription history, including plan, lifecycle status, and start/end timestamps.
 
 ### Practice attempts
-Student-only endpoints use the exact combination of `practiceMode`, `subject`, `topic`, `difficulty`, and `page`.
+Student-only endpoints use the exact combination of `practiceMode`, `subject`, the subject-specific topic field, `difficulty`, and `page`.
 
 ```http
 POST /api/v1/student/practice-attempts
@@ -123,6 +125,28 @@ Submission example:
 ```
 
 Every question in the resolved 20-question set is stored in a new attempt. Unanswered questions have `selectedOption: null`; `correctOption` is snapshotted in the answer row and is returned only by submission/latest-attempt responses. The status endpoint returns all available sets and exact-set completion flags without requiring one request per set.
+
+MAT supports both practice modes:
+
+```http
+POST /api/v1/student/practice-attempts
+GET  /api/v1/student/practice-attempts?practiceMode=SUBJECT&subject=MAT&difficulty=EASY
+GET  /api/v1/student/practice-attempts?practiceMode=TOPIC&subject=MAT&topicId=1&difficulty=EASY
+GET  /api/v1/student/practice-attempts/latest?practiceMode=SUBJECT&subject=MAT&difficulty=EASY&page=0
+GET  /api/v1/student/practice-attempts/latest?practiceMode=TOPIC&subject=MAT&topicId=1&difficulty=EASY&page=0
+```
+
+For MAT, `topicId` is required only for `TOPIC` mode. Both modes resolve active
+`mat_questions` using the requested difficulty and stable `sort_order, id`
+ordering. The existing question IDs, image URLs, options, scoring, and answer
+identity are unchanged.
+
+The existing `/latest` response includes `explanation` on MAT answer objects.
+The value is selected from `mat_question_explanations` using the student's
+profile `preferredLanguage`: `bn` selects Bengali, while `en`, null, blank, and
+unsupported values select English. There is no cross-language fallback. If the
+selected translation does not exist, the nullable field is omitted. Arithmetic
+latest responses retain their existing shape.
 
 ### Student Profile
 #### Get current student profile
@@ -365,11 +389,8 @@ existing practice-attempt answer table without using generic `questions`.
 The following tables are present in the Flyway-backed schema, but their REST APIs are intentionally not implemented yet:
 
 - `application.questions`
-- `application.mat_questions`
 - `application.language_passages`
 - `application.language_questions`
-- `application.papers`
-- `application.paper_questions`
 
 ## API conventions
 - Use DTOs instead of exposing JPA entities directly.

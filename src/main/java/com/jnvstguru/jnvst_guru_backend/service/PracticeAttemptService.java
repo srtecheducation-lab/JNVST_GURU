@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,6 +22,7 @@ public class PracticeAttemptService {
     private final ApplicationUserService applicationUserService;
     private final ArithmeticQuestionRepository questionRepository;
     private final MatQuestionRepository matQuestionRepository;
+    private final MatQuestionExplanationRepository matQuestionExplanationRepository;
     private final PracticeAttemptRepository attemptRepository;
     private final PracticeAttemptAnswerRepository answerRepository;
     private final EntityManager entityManager;
@@ -31,12 +31,14 @@ public class PracticeAttemptService {
     public PracticeAttemptService(ApplicationUserService applicationUserService,
                                   ArithmeticQuestionRepository questionRepository,
                                   MatQuestionRepository matQuestionRepository,
+                                  MatQuestionExplanationRepository matQuestionExplanationRepository,
                                   PracticeAttemptRepository attemptRepository,
                                   PracticeAttemptAnswerRepository answerRepository,
                                   EntityManager entityManager) {
         this.applicationUserService = applicationUserService;
         this.questionRepository = questionRepository;
         this.matQuestionRepository = matQuestionRepository;
+        this.matQuestionExplanationRepository = matQuestionExplanationRepository;
         this.attemptRepository = attemptRepository;
         this.answerRepository = answerRepository;
         this.entityManager = entityManager;
@@ -47,7 +49,7 @@ public class PracticeAttemptService {
                                   PracticeAttemptRepository attemptRepository,
                                   PracticeAttemptAnswerRepository answerRepository,
                                   EntityManager entityManager) {
-        this(applicationUserService, questionRepository, null, attemptRepository, answerRepository, entityManager);
+        this(applicationUserService, questionRepository, null, null, attemptRepository, answerRepository, entityManager);
     }
 
     @Transactional
@@ -242,7 +244,10 @@ public class PracticeAttemptService {
                 attempt = attempts.isEmpty() ? null : attempts.get(0);
             }
             if (attempt == null) throw new PracticeAttemptNotFoundException();
-            return toResponse(attempt, answerRepository.findByAttemptOrderById(attempt));
+            List<PracticeAttemptAnswerEntity> answers = answerRepository.findByAttemptOrderById(attempt);
+            String languageCode = preferredLanguageCode(attempt.getUser());
+            Map<Long, String> explanations = loadExplanations(answers, languageCode);
+            return toResponse(attempt, answers, explanations);
         }
 
         validateSelection(mode, subject, topic, difficulty, page);
@@ -365,6 +370,12 @@ public class PracticeAttemptService {
 
     private PracticeAttemptResponse toResponse(PracticeAttemptEntity attempt,
                                                List<PracticeAttemptAnswerEntity> answers) {
+        return toResponse(attempt, answers, Map.of());
+    }
+
+    private PracticeAttemptResponse toResponse(PracticeAttemptEntity attempt,
+                                               List<PracticeAttemptAnswerEntity> answers,
+                                               Map<Long, String> explanations) {
         return new PracticeAttemptResponse(
                 attempt.getId(), attempt.getPracticeMode(), attempt.getSubject(), attempt.getTopic(),
                 attempt.getDifficulty(), attempt.getPageNumber(), attempt.getScore(), attempt.getQuestionCount(),
@@ -372,7 +383,34 @@ public class PracticeAttemptService {
                 attempt.getSubmittedAt(), answers.stream()
                 .map(answer -> new PracticeAttemptResponse.AnswerResponse(
                         answer.getQuestionId(), answer.getSelectedOption(),
-                        answer.getCorrectOption(), answer.isCorrect(), answer.getMatQuestionId()))
+                        answer.getCorrectOption(), answer.isCorrect(), answer.getMatQuestionId(),
+                        explanations.get(answer.getMatQuestionId())))
                 .toList(), attempt.getTopicId());
+    }
+
+    private Map<Long, String> loadExplanations(List<PracticeAttemptAnswerEntity> answers, String languageCode) {
+        Set<Long> matQuestionIds = answers.stream()
+                .map(PracticeAttemptAnswerEntity::getMatQuestionId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (matQuestionIds.isEmpty()) {
+            return Map.of();
+        }
+        return matQuestionExplanationRepository
+                .findByMatQuestionIdInAndLanguageCode(matQuestionIds, languageCode)
+                .stream()
+                .collect(Collectors.toMap(
+                        explanation -> explanation.getMatQuestion().getId(),
+                        MatQuestionExplanationEntity::getExplanation));
+    }
+
+    private String preferredLanguageCode(UserEntity user) {
+        StudentProfileEntity profile = user.getStudentProfile();
+        if (profile == null || profile.getPreferredLanguage() == null
+                || profile.getPreferredLanguage().isBlank()) {
+            return "en";
+        }
+        return profile.getPreferredLanguage().trim().toLowerCase(Locale.ROOT).equals("bn")
+                ? "bn" : "en";
     }
 }

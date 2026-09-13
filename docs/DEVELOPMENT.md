@@ -1,6 +1,7 @@
 # Development
 
 ## Update log
+- 2026-09-13: Updated development scope and validation notes for MAT retrieval/import, practice attempts, and language-specific MAT review explanations.
 - 2026-09-02: Updated the dev notes to reflect the current working authentication flow, profile/reference data functionality, arithmetic CRUD work, and the Flyway schema additions for question, MAT, language, and paper tables.
 - 2026-09-02: Confirmed the documented API surface includes authenticated subscriptions alongside the profile, reference-data, and arithmetic modules.
 - 2026-09-02: Added the question-bank Spring Data JPA repository layer with simple CRUD interfaces only.
@@ -9,7 +10,7 @@
 - 2026-09-02: Added read-only question and paper REST controllers with DTO-only responses.
 - 2026-08-30: Added setup references and development workflow notes to keep local environment instructions aligned with the current backend foundation.
 
-Status: The backend foundation is verified with Java 25 + Maven Wrapper. The active development focus includes secure auth, student profile/ref data, arithmetic question CRUD, and Flyway-backed schema support for MAT/language/paper models without exposing new public APIs prematurely.
+Status: The backend is verified with Java 25 + Maven Wrapper. Active modules include secure auth, student profile/reference data, Arithmetic and MAT question flows, practice attempts, and Flyway-managed MAT review explanations.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start
@@ -71,8 +72,9 @@ $env:DB_PASSWORD = "jnvst_guru_password"
 - Confirm the Spring Boot application starts correctly
 - Keep the application structure clean and modular
 - Maintain the working Supabase JWT and authenticated-user flow
-- Extend the Student Profile, state/district, and arithmetic modules without redesigning existing behavior
-- Keep the Flyway schema current for the question hierarchy, MAT, language, and paper tables
+- Extend the Student Profile, state/district, Arithmetic, MAT, and practice modules without redesigning existing behavior
+- Keep the Flyway schema current for the question hierarchy, MAT, practice attempts, language, and paper tables
+- Keep MAT explanations language-specific and limited to the existing latest-review response
 - Add tests before exposing additional public APIs
 
 ## Guidance

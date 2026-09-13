@@ -2,6 +2,12 @@
 
 This file records the documentation updates made while building the JNVST GURU backend foundation. Every significant change should be reflected here and in the relevant project markdown file.
 
+## 2026-09-13
+- Documented MAT subject-wise and topic-wise practice-attempt flows.
+- Documented language-specific MAT explanations returned only by the existing latest-attempt review endpoint.
+- Documented Flyway V14-V17, including the MAT practice constraints and `mat_question_explanations` table.
+- Updated the README, API, architecture, database, onboarding, development, and decision documentation to match the current implementation.
+
 ## 2026-09-02
 - Verified the working Supabase JWT flow with a real access token and confirmed the `/api/v1/me` endpoint returns the authenticated current user.
 - Simplified the backend configuration to a single real database and Supabase JWT setup instead of alternating between H2/test and real DB modes.
@@ -32,6 +38,7 @@ This file records the documentation updates made while building the JNVST GURU b
 - Updated the backend implementation plan to AUTHENTICATION OPTION A: Android handles Supabase Auth and Spring Boot acts as a JWT resource server validating Supabase-issued access tokens for application data access.
 
 ## Planned
-- Add domain-specific API documentation once the question-bank and learner modules are implemented.
-- Add database schema design notes when the PostgreSQL model is finalized.
+- Add language passage/question APIs.
+- Add subject/topic catalog APIs beyond the current MAT endpoints.
+- Add mock-test and student-progress APIs.
 - Update this changelog whenever a significant implementation or documentation milestone is reached.
