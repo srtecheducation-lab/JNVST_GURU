@@ -125,9 +125,15 @@ Status: Implemented foundational decisions, with future decisions added only whe
 
 ## BD-017: Transactional Google Drive Language CSV import
 - Date: 2026-09-13
-- Decision: Import recognized `P001`-`P004` language CSV files directly from a supplied Google Drive batch folder into the independent Language tables, with one transaction per CSV.
+- Decision: Import recognized positive-number English/Bengali language CSV files directly from a supplied Google Drive batch folder into the independent Language tables, with one transaction per CSV.
 - Reason: A CSV represents one passage and exactly five questions. File-level transactions prevent partial passage/question sets while allowing available valid language files to import independently when a batch is incomplete.
 - Consequences: The importer validates headers, filename language/passage, question ranges, required text/options, and answer values before writing. Existing `(language_code, batch_no, question_number)` rows are skipped rather than overwritten. No CSV or question text is uploaded to Supabase Storage, and no difficulty is stored for Language.
+
+## BD-019: Extendable Language passage numbering
+- Date: 2026-09-13
+- Decision: Language passage and question numbers are positive logical values rather than being capped at four passages and twenty questions. The importer accepts later files such as `P005_en.csv` and `P006_bn.csv`, while preserving the existing language/batch uniqueness keys.
+- Reason: Batches may grow beyond the initial four-passage seed set, and later files must be importable without deleting or re-importing earlier passages.
+- Consequences: V20 removes the obsolete V18 upper-bound checks. Re-imports reuse existing passages and skip existing questions; new passage files import independently. Only English and Bengali filenames are recognized by this importer.
 
 ## BD-018: Passage-oriented student Language retrieval
 - Date: 2026-09-13

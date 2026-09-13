@@ -434,12 +434,15 @@ Content-Type: application/json
 {"folderId":"<google-drive-batch-folder-id>"}
 ```
 
-The batch folder name becomes `batchNo`. Direct children matching
-`P001_en.csv` through `P004_bn.csv` are processed; unrelated files and folders
-are ignored. The response reports processed files, imported and skipped
-questions, failed files, missing expected files, and validation/database
-errors. Each CSV is validated and committed independently, so a failed file
-does not leave a partial passage or question set.
+The batch folder name becomes `batchNo`. Direct children matching positive
+passage numbers such as `P001_en.csv`, `P005_bn.csv`, and `P006_en.csv` are
+processed; unrelated files and folders are ignored. For recognized passage
+numbers, missing English/Bengali counterpart files are reported, but earlier
+passages are not required for later imports. Hindi files are ignored and are
+not reported as missing. The response reports processed and skipped questions,
+failed files, missing expected counterparts, and validation/database errors.
+Each CSV is validated and committed independently, so a failed file does not
+leave a partial passage or question set.
 
 ## Planned endpoints
 - Subject and topic catalog endpoints

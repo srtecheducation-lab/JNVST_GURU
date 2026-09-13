@@ -1,6 +1,7 @@
 # JNVST GURU Database Design
 
 ## Update log
+- 2026-09-13: Added V20 to allow positive Language passage and question numbers beyond the original four-passage/20-question seed limits.
 - 2026-09-13: Added V19 to make Language question difficulty nullable because Language has no difficulty.
 - 2026-09-13: Added V18 independent Language passages and questions, with language-owned identities separate from the generic question hierarchy.
 - 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
@@ -19,7 +20,7 @@
 ## Status
 - Database direction: PostgreSQL
 - Migration system: Flyway
-- Migration status: V1 through V18 are applied; V19 is the new migration required for Language's no-difficulty schema and importer support
+- Migration status: V1 through V19 are applied; V20 is the new migration required for Language passages beyond P004
 - Scope: Implemented database design for user access, subscriptions, state/district master data, Arithmetic question content, independent MAT question content, practice attempts, language explanations, and paper metadata
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
@@ -49,6 +50,7 @@ The following Flyway migrations are present in the repository and are the source
 | V17 | Language-specific MAT question explanations and lookup index |
 | V18 | Independent Language passages and questions per language and batch |
 | V19 | Remove the Language question difficulty requirement and update its ordering index |
+| V20 | Allow positive Language passage/question numbers beyond the original seed limits |
 
 The applied schema is authoritative for the current backend. MAT is intentionally detached from `application.questions`: MAT questions are image-based and have their own identity/content model. The former question-backed table is retained as `application.mat_questions_legacy` so no existing rows are dropped. MAT topic metadata is localized in `mat_topic_translations`; question images are stored externally and only their URLs are persisted.
 
@@ -539,7 +541,7 @@ not joined into the normal MAT question retrieval response.
 | id | BIGINT PK | Independent passage identity |
 | language_code | VARCHAR(10) NOT NULL | `en`, `hi`, or `bn` |
 | batch_no | VARCHAR(60) NOT NULL | Import/content batch |
-| passage_number | INTEGER NOT NULL | 1 through 4 within a language/batch |
+| passage_number | INTEGER NOT NULL | Positive logical number within a language/batch |
 | passage_text | TEXT NOT NULL | Language-specific passage content |
 | created_at | TIMESTAMPTZ | Audit |
 | updated_at | TIMESTAMPTZ | Audit |
@@ -558,7 +560,7 @@ Hindi, and Bengali are not the same question identity.
 | language_code | VARCHAR(10) NOT NULL | `en`, `hi`, or `bn` |
 | batch_no | VARCHAR(60) NOT NULL | Import/content batch |
 | passage_id | BIGINT NOT NULL | FK to the same-language/batch passage |
-| question_number | INTEGER NOT NULL | 1 through 20 within a language/batch |
+| question_number | INTEGER NOT NULL | Positive logical number within a language/batch |
 | question_text | TEXT NOT NULL | Language-specific text |
 | option_a / option_b / option_c / option_d | TEXT NOT NULL | Language-specific options |
 | correct_option | VARCHAR(1) NOT NULL | Answer retained server-side |
@@ -578,6 +580,11 @@ Language CSV imports use the V18 independent tables only. Each imported file
 creates or reuses one `(language_code, batch_no, passage_number)` passage and
 creates independent question IDs for its five rows. V19 is required because
 Language questions do not have EASY/MEDIUM/HARD difficulty.
+
+V20 removes the original V18 checks that limited passage numbers to 1–4 and
+question numbers to 1–20. The importer derives both logical ranges from the
+filename passage number, so P005 contains Q021–Q025 and P006 contains
+Q026–Q030.
 
 The student Language API paginates `language_passages`, with `size` measured in
 passages. It selects passages having active questions for the requested

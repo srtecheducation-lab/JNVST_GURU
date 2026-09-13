@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 @ConditionalOnProperty(prefix = "google.drive", name = "enabled", havingValue = "true")
 public class GoogleDriveLanguageImportService {
     private static final String FOLDER_MIME = "application/vnd.google-apps.folder";
-    private static final Pattern FILE_PATTERN = Pattern.compile("^P00([1-4])_(en|hi|bn)\\.csv$");
+    private static final Pattern FILE_PATTERN = Pattern.compile("^P(\\d{3,})_(en|bn)\\.csv$");
     private static final List<String> HEADERS = List.of(
             "passage_text", "question_no", "question_text", "option_a",
             "option_b", "option_c", "option_d", "correct_option");
@@ -68,11 +68,20 @@ public class GoogleDriveLanguageImportService {
             }
         }
 
+        Set<Integer> passageNumbers = new TreeSet<>();
+        for (String fileName : csvFiles.keySet()) {
+            Matcher matcher = FILE_PATTERN.matcher(fileName);
+            if (matcher.matches()) {
+                passageNumbers.add(parsePassageNumber(matcher.group(1)));
+            }
+        }
         List<String> missing = new ArrayList<>();
-        for (int passage = 1; passage <= 4; passage++) {
-            for (String language : List.of("en", "hi", "bn")) {
+        for (int passage : passageNumbers) {
+            for (String language : List.of("en", "bn")) {
                 String expected = String.format("P%03d_%s.csv", passage, language);
-                if (!csvFiles.containsKey(expected)) missing.add(expected);
+                if (!csvFiles.containsKey(expected)) {
+                    missing.add(expected);
+                }
             }
         }
 
@@ -142,7 +151,7 @@ public class GoogleDriveLanguageImportService {
     private ParsedFile parseAndValidate(String fileName, InputStream input) throws IOException {
         Matcher fileMatcher = FILE_PATTERN.matcher(fileName);
         if (!fileMatcher.matches()) throw new IllegalArgumentException("Invalid Language CSV filename");
-        int passageNumber = Integer.parseInt(fileMatcher.group(1));
+        int passageNumber = parsePassageNumber(fileMatcher.group(1));
         String language = fileMatcher.group(2);
         List<List<String>> rows = parseCsv(input);
         if (rows.isEmpty()) throw new IllegalArgumentException("CSV is empty");
@@ -180,6 +189,18 @@ public class GoogleDriveLanguageImportService {
         }
         if (passageText.isBlank()) throw new IllegalArgumentException("passage_text is required");
         return new ParsedFile(passageNumber, language, passageText, questions);
+    }
+
+    private int parsePassageNumber(String value) {
+        try {
+            int passageNumber = Integer.parseInt(value);
+            if (passageNumber <= 0) {
+                throw new IllegalArgumentException("Passage number must be positive");
+            }
+            return passageNumber;
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Passage number is outside the supported range", ex);
+        }
     }
 
     private List<List<String>> parseCsv(InputStream input) throws IOException {
