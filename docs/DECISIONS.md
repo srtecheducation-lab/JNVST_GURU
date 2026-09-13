@@ -104,6 +104,12 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Reason: MAT source material is image-based, with one question image and four option images, so its content and identity model differ from text-based Arithmetic and Language questions.
 - Consequences: MAT has separate topics/translations, image URL fields, APIs, and CRUD/import-ready payloads. Existing question-backed MAT rows are retained in `mat_questions_legacy`.
 
+## BD-014: Dual question identity for practice answers
+- Date: 2026-09-12
+- Decision: Preserve Arithmetic practice answers in `question_id` and add a source-discriminated `mat_question_id` reference for MAT attempts.
+- Reason: MAT questions are independent from `application.questions`, so a single generic foreign key cannot safely represent both subjects.
+- Consequences: Arithmetic requests and stored attempts remain backward-compatible. MAT uses `topic_id`, `mat_questions.id`, and `question_source = MAT`; both subjects share the existing attempt and review APIs.
+
 ## Document status legend
 - Implemented: Already created and working in the project.
 - Planned: Scheduled for a later stage.

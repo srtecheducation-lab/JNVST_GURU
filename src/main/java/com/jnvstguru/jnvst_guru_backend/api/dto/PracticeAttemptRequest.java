@@ -9,6 +9,13 @@ public record PracticeAttemptRequest(
         ArithmeticQuestionEnums.QuestionType topic,
         ArithmeticQuestionEnums.Difficulty difficulty,
         Integer page,
-        List<AnswerRequest> answers) {
+        List<AnswerRequest> answers,
+        Long topicId) {
+    public PracticeAttemptRequest(PracticeMode practiceMode, PracticeSubject subject,
+                                  ArithmeticQuestionEnums.QuestionType topic,
+                                  ArithmeticQuestionEnums.Difficulty difficulty, Integer page,
+                                  List<AnswerRequest> answers) {
+        this(practiceMode, subject, topic, difficulty, page, answers, null);
+    }
     public record AnswerRequest(Long questionId, String selectedOption) {}
 }

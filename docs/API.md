@@ -335,8 +335,28 @@ same paper, batch, and question number already exist, it reuses that occurrence'
 shared question identity; otherwise it reuses an exact normalized Bengali
 content hash or creates a new reusable question and paper occurrence.
 
+### Student practice attempts
+The existing practice-attempt endpoints support both Arithmetic and MAT.
+
+Arithmetic requests keep the existing `topic` question-type field. MAT requests
+use `subject=MAT` and `difficulty=EASY|MEDIUM|HARD`. Subject-wise MAT practice
+omits `topicId`; topic-wise MAT practice requires a numeric `topicId` from
+`mat_topics.id`:
+
+```http
+POST /api/v1/student/practice-attempts
+GET /api/v1/student/practice-attempts?practiceMode=SUBJECT&subject=MAT&difficulty=EASY
+GET /api/v1/student/practice-attempts?practiceMode=TOPIC&subject=MAT&topicId=1&difficulty=EASY
+GET /api/v1/student/practice-attempts/latest?practiceMode=SUBJECT&subject=MAT&difficulty=EASY&page=0
+GET /api/v1/student/practice-attempts/latest?practiceMode=TOPIC&subject=MAT&topicId=1&difficulty=EASY&page=0
+```
+
+MAT submissions resolve active questions from `mat_questions`, use
+`mat_questions.id` and `correct_option`, and store review snapshots in the
+existing practice-attempt answer table without using generic `questions`.
+
 ## Planned endpoints
-- MAT question and language passage/question APIs
+- Language passage/question APIs
 - Subject and topic catalog endpoints
 - Mock test endpoints
 - Student progress endpoints

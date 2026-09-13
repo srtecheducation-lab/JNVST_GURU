@@ -26,6 +26,8 @@ public class PracticeAttemptEntity {
     @Enumerated(EnumType.STRING)
     @Column(length = 40)
     private ArithmeticQuestionEnums.QuestionType topic;
+    @Column(name = "topic_id")
+    private Long topicId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -62,6 +64,8 @@ public class PracticeAttemptEntity {
     public void setSubject(PracticeSubject subject) { this.subject = subject; }
     public ArithmeticQuestionEnums.QuestionType getTopic() { return topic; }
     public void setTopic(ArithmeticQuestionEnums.QuestionType topic) { this.topic = topic; }
+    public Long getTopicId() { return topicId; }
+    public void setTopicId(Long topicId) { this.topicId = topicId; }
     public ArithmeticQuestionEnums.Difficulty getDifficulty() { return difficulty; }
     public void setDifficulty(ArithmeticQuestionEnums.Difficulty difficulty) { this.difficulty = difficulty; }
     public Integer getPageNumber() { return pageNumber; }

@@ -8,6 +8,8 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MatQuestionRepository extends JpaRepository<MatQuestionEntity, Long> {
+    long countByActiveTrueAndTopicIdAndDifficulty(Long topicId, String difficulty);
+    long countByActiveTrueAndDifficulty(String difficulty);
     boolean existsByOptionAImageUrl(String optionAImageUrl);
     Page<MatQuestionEntity> findByActiveTrueOrderBySortOrderAscIdAsc(Pageable pageable);
     Page<MatQuestionEntity> findByTopicIdAndActiveTrueOrderBySortOrderAscIdAsc(Long topicId, Pageable pageable);

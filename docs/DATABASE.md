@@ -5,6 +5,7 @@
 - 2026-09-03: Added Flyway V8 multilingual question content and language-specific passage relationships for English, Hindi, and Bengali.
 - 2026-09-03: Added Flyway V9 `paper_questions.batch_question_key` with a per-paper uniqueness constraint.
 - 2026-09-07: Added Flyway V11 practice-attempt and historical answer tables.
+- 2026-09-12: Added independent MAT practice-attempt references while preserving Arithmetic answer references.
 - 2026-09-09: Added Flyway V13 independent MAT topics, translations, and image-based questions. The former question-backed MAT table is preserved as `mat_questions_legacy`.
 - 2026-09-02: Added the JPA/domain mapping status for the finalized question-bank entities and shared-primary-key relationships; no schema or migration changes were made.
 - 2026-09-02: Added simple Spring Data JPA CRUD repositories for the seven question-bank entities; no schema or migration changes were made.
@@ -42,7 +43,7 @@ The following Flyway migrations are present in the repository and have been appl
 
 The applied schema is authoritative for the current backend. MAT is intentionally detached from `application.questions`: MAT questions are image-based and have their own identity/content model. The former question-backed table is retained as `application.mat_questions_legacy` so no existing rows are dropped. MAT topic metadata is localized in `mat_topic_translations`; question images are stored externally and only their URLs are persisted.
 
-Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Answer rows store both the selected option and the historical correct-option snapshot.
+Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Arithmetic attempts retain their existing `questions.id` answer reference. MAT attempts use `question_source = MAT` and `mat_question_id` referencing `mat_questions.id`; `topic_id` stores the MAT topic ID. Answer rows store both the selected option and the historical correct-option snapshot.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start

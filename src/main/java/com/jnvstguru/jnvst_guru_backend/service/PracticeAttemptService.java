@@ -7,7 +7,9 @@ import jakarta.persistence.EntityManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
@@ -20,24 +22,39 @@ public class PracticeAttemptService {
     private static final Logger log = LoggerFactory.getLogger(PracticeAttemptService.class);
     private final ApplicationUserService applicationUserService;
     private final ArithmeticQuestionRepository questionRepository;
+    private final MatQuestionRepository matQuestionRepository;
     private final PracticeAttemptRepository attemptRepository;
     private final PracticeAttemptAnswerRepository answerRepository;
     private final EntityManager entityManager;
+
+    @Autowired
+    public PracticeAttemptService(ApplicationUserService applicationUserService,
+                                  ArithmeticQuestionRepository questionRepository,
+                                  MatQuestionRepository matQuestionRepository,
+                                  PracticeAttemptRepository attemptRepository,
+                                  PracticeAttemptAnswerRepository answerRepository,
+                                  EntityManager entityManager) {
+        this.applicationUserService = applicationUserService;
+        this.questionRepository = questionRepository;
+        this.matQuestionRepository = matQuestionRepository;
+        this.attemptRepository = attemptRepository;
+        this.answerRepository = answerRepository;
+        this.entityManager = entityManager;
+    }
 
     public PracticeAttemptService(ApplicationUserService applicationUserService,
                                   ArithmeticQuestionRepository questionRepository,
                                   PracticeAttemptRepository attemptRepository,
                                   PracticeAttemptAnswerRepository answerRepository,
                                   EntityManager entityManager) {
-        this.applicationUserService = applicationUserService;
-        this.questionRepository = questionRepository;
-        this.attemptRepository = attemptRepository;
-        this.answerRepository = answerRepository;
-        this.entityManager = entityManager;
+        this(applicationUserService, questionRepository, null, attemptRepository, answerRepository, entityManager);
     }
 
     @Transactional
     public PracticeAttemptResponse submit(UUID authUserId, PracticeAttemptRequest request) {
+        if (request.subject() == PracticeSubject.MAT) {
+            return submitMat(authUserId, request);
+        }
         validateSelection(request.practiceMode(), request.subject(), request.topic(),
                 request.difficulty(), request.page());
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
@@ -90,22 +107,74 @@ public class PracticeAttemptService {
         return toResponse(saved, answers);
     }
 
+    private PracticeAttemptResponse submitMat(UUID authUserId, PracticeAttemptRequest request) {
+        validateMatSelection(request.practiceMode(), request.subject(), request.topicId(),
+                request.topic(), request.difficulty(), request.page());
+        UserEntity user = applicationUserService.findByAuthUserId(authUserId);
+        Map<Long, PracticeAttemptRequest.AnswerRequest> submitted = normalizeAnswers(request.answers());
+        Page<MatQuestionEntity> page = request.practiceMode() == PracticeMode.TOPIC
+                ? matQuestionRepository.findByTopicIdAndDifficultyAndActiveTrueOrderBySortOrderAscIdAsc(
+                        request.topicId(), request.difficulty().name(), PageRequest.of(request.page(), SET_SIZE))
+                : matQuestionRepository.findByDifficultyAndActiveTrueOrderBySortOrderAscIdAsc(
+                        request.difficulty().name(), PageRequest.of(request.page(), SET_SIZE));
+        List<MatQuestionEntity> questions = page.getContent();
+        Set<Long> questionIds = questions.stream().map(MatQuestionEntity::getId).collect(Collectors.toSet());
+        if (!questionIds.containsAll(submitted.keySet())) {
+            throw new IllegalArgumentException("One or more submitted MAT question IDs do not belong to this practice set.");
+        }
+        PracticeAttemptEntity attempt = new PracticeAttemptEntity();
+        attempt.setUser(user);
+        attempt.setPracticeMode(request.practiceMode());
+        attempt.setSubject(PracticeSubject.MAT);
+        attempt.setTopicId(request.topicId());
+        attempt.setDifficulty(request.difficulty());
+        attempt.setPageNumber(request.page());
+        attempt.setQuestionCount(questions.size());
+        List<PracticeAttemptAnswerEntity> answers = new ArrayList<>();
+        int correct = 0;
+        int unanswered = 0;
+        for (MatQuestionEntity question : questions) {
+            PracticeAttemptRequest.AnswerRequest submittedAnswer = submitted.get(question.getId());
+            String selected = submittedAnswer == null ? null : normalizeOption(submittedAnswer.selectedOption());
+            boolean isCorrect = selected != null && selected.equals(question.getCorrectOption());
+            if (selected == null) unanswered++;
+            else if (isCorrect) correct++;
+            PracticeAttemptAnswerEntity answer = new PracticeAttemptAnswerEntity();
+            answer.setAttempt(attempt);
+            answer.setQuestionSource(PracticeQuestionSource.MAT);
+            answer.setMatQuestionId(question.getId());
+            answer.setSelectedOption(selected);
+            answer.setCorrectOption(question.getCorrectOption());
+            answer.setCorrect(isCorrect);
+            answers.add(answer);
+        }
+        attempt.setScore(correct);
+        attempt.setCorrectCount(correct);
+        attempt.setUnansweredCount(unanswered);
+        attempt.setWrongCount(questions.size() - correct - unanswered);
+        PracticeAttemptEntity saved = attemptRepository.save(attempt);
+        saveAnswersBulk(saved.getId(), answers);
+        return toResponse(saved, answers);
+    }
+
     private void saveAnswersBulk(Long attemptId, List<PracticeAttemptAnswerEntity> answers) {
         if (answers.isEmpty()) {
             return;
         }
         String values = java.util.stream.IntStream.range(0, answers.size())
-                .mapToObj(i -> "(:attempt" + i + ", :question" + i + ", :selected" + i
-                        + ", :correct" + i + ", :isCorrect" + i + ")")
+                .mapToObj(i -> "(:attempt" + i + ", :question" + i + ", :matQuestion" + i
+                        + ", :source" + i + ", :selected" + i + ", :correct" + i + ", :isCorrect" + i + ")")
                 .collect(Collectors.joining(", "));
         var query = entityManager.createNativeQuery("""
                 insert into application.practice_attempt_answers
-                    (attempt_id, question_id, selected_option, correct_option, is_correct)
+                    (attempt_id, question_id, mat_question_id, question_source, selected_option, correct_option, is_correct)
                 values """ + values);
         for (int i = 0; i < answers.size(); i++) {
             PracticeAttemptAnswerEntity answer = answers.get(i);
             query.setParameter("attempt" + i, attemptId);
             query.setParameter("question" + i, answer.getQuestionId());
+            query.setParameter("matQuestion" + i, answer.getMatQuestionId());
+            query.setParameter("source" + i, answer.getQuestionSource().name());
             query.setParameter("selected" + i, answer.getSelectedOption());
             query.setParameter("correct" + i, answer.getCorrectOption());
             query.setParameter("isCorrect" + i, answer.isCorrect());
@@ -116,7 +185,24 @@ public class PracticeAttemptService {
     @Transactional(readOnly = true)
     public PracticeStatusResponse getStatus(UUID authUserId, PracticeMode mode, PracticeSubject subject,
                                             ArithmeticQuestionEnums.QuestionType topic,
-                                            ArithmeticQuestionEnums.Difficulty difficulty) {
+                                            ArithmeticQuestionEnums.Difficulty difficulty, Long topicId) {
+        if (subject == PracticeSubject.MAT) {
+            validateMatSelection(mode, subject, topicId, topic, difficulty, 0);
+            UserEntity user = applicationUserService.findByAuthUserId(authUserId);
+            long total;
+            Set<Integer> completed;
+            if (mode == PracticeMode.TOPIC) {
+                total = matQuestionRepository.countByActiveTrueAndTopicIdAndDifficulty(topicId, difficulty.name());
+                completed = new HashSet<>(attemptRepository.findCompletedMatPages(
+                        user, mode, subject, topicId, difficulty));
+            } else {
+                total = matQuestionRepository.countByActiveTrueAndDifficulty(difficulty.name());
+                completed = new HashSet<>(attemptRepository.findCompletedMatSubjectPages(
+                        user, mode, subject, difficulty));
+            }
+            return buildStatus(mode, subject, difficulty, topicId, total, completed);
+        }
+
         validateSelection(mode, subject, topic, difficulty, 0);
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
         long total = questionRepository.countActivePracticeQuestions(mode == PracticeMode.TOPIC ? topic : null, difficulty);
@@ -128,13 +214,37 @@ public class PracticeAttemptService {
             int count = (int) Math.min(SET_SIZE, total - (long) page * SET_SIZE);
             sets.add(new PracticeStatusResponse.SetStatus(page, page + 1, count, completed.contains(page)));
         }
-        return new PracticeStatusResponse(mode, subject, mode == PracticeMode.TOPIC ? topic : null, difficulty, sets);
+        return new PracticeStatusResponse(mode, subject, mode == PracticeMode.TOPIC ? topic : null,
+                difficulty, sets, null);
+    }
+
+    public PracticeStatusResponse getStatus(UUID authUserId, PracticeMode mode, PracticeSubject subject,
+                                            ArithmeticQuestionEnums.QuestionType topic,
+                                            ArithmeticQuestionEnums.Difficulty difficulty) {
+        return getStatus(authUserId, mode, subject, topic, difficulty, null);
     }
 
     @Transactional(readOnly = true)
     public PracticeAttemptResponse getLatest(UUID authUserId, PracticeMode mode, PracticeSubject subject,
                                              ArithmeticQuestionEnums.QuestionType topic,
-                                             ArithmeticQuestionEnums.Difficulty difficulty, Integer page) {
+                                             ArithmeticQuestionEnums.Difficulty difficulty, Integer page, Long topicId) {
+        if (subject == PracticeSubject.MAT) {
+            validateMatSelection(mode, subject, topicId, topic, difficulty, page);
+            UserEntity user = applicationUserService.findByAuthUserId(authUserId);
+            PracticeAttemptEntity attempt;
+            if (mode == PracticeMode.TOPIC) {
+                attempt = attemptRepository
+                        .findFirstByUserAndPracticeModeAndSubjectAndTopicIdAndDifficultyAndPageNumberOrderBySubmittedAtDescIdDesc(
+                                user, mode, subject, topicId, difficulty, page);
+            } else {
+                List<PracticeAttemptEntity> attempts = attemptRepository.findLatestMatSubject(
+                        user, mode, subject, difficulty, page, PageRequest.of(0, 1));
+                attempt = attempts.isEmpty() ? null : attempts.get(0);
+            }
+            if (attempt == null) throw new PracticeAttemptNotFoundException();
+            return toResponse(attempt, answerRepository.findByAttemptOrderById(attempt));
+        }
+
         validateSelection(mode, subject, topic, difficulty, page);
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
         PracticeAttemptEntity attempt = attemptRepository
@@ -144,6 +254,24 @@ public class PracticeAttemptService {
             throw new PracticeAttemptNotFoundException();
         }
         return toResponse(attempt, answerRepository.findByAttemptOrderByQuestionId(attempt));
+    }
+
+    public PracticeAttemptResponse getLatest(UUID authUserId, PracticeMode mode, PracticeSubject subject,
+                                             ArithmeticQuestionEnums.QuestionType topic,
+                                             ArithmeticQuestionEnums.Difficulty difficulty, Integer page) {
+        return getLatest(authUserId, mode, subject, topic, difficulty, page, null);
+    }
+
+    private PracticeStatusResponse buildStatus(PracticeMode mode, PracticeSubject subject,
+                                               ArithmeticQuestionEnums.Difficulty difficulty, Long topicId,
+                                               long total, Set<Integer> completed) {
+        int setCount = (int) ((total + SET_SIZE - 1) / SET_SIZE);
+        List<PracticeStatusResponse.SetStatus> sets = new ArrayList<>();
+        for (int page = 0; page < setCount; page++) {
+            int count = (int) Math.min(SET_SIZE, total - (long) page * SET_SIZE);
+            sets.add(new PracticeStatusResponse.SetStatus(page, page + 1, count, completed.contains(page)));
+        }
+        return new PracticeStatusResponse(mode, subject, null, difficulty, sets, topicId);
     }
 
     private List<ArithmeticQuestionRepository.PracticeQuestionProjection> findSet(
@@ -209,13 +337,29 @@ public class PracticeAttemptService {
             throw new IllegalArgumentException("practiceMode, subject, difficulty, and a non-negative page are required.");
         }
         if (subject != PracticeSubject.ARITHMETIC) {
-            throw new IllegalArgumentException("Only ARITHMETIC practice is currently supported.");
+            throw new IllegalArgumentException("Unsupported practice subject.");
         }
+
         if (mode == PracticeMode.TOPIC && topic == null) {
             throw new IllegalArgumentException("topic is required for TOPIC practice.");
         }
         if (mode == PracticeMode.SUBJECT && topic != null) {
             throw new IllegalArgumentException("topic must be null for SUBJECT practice.");
+        }
+    }
+
+    private void validateMatSelection(PracticeMode mode, PracticeSubject subject, Long topicId,
+                                      ArithmeticQuestionEnums.QuestionType topic,
+                                      ArithmeticQuestionEnums.Difficulty difficulty, Integer page) {
+        boolean invalidTopicMode = mode == PracticeMode.TOPIC
+                && (topicId == null || topicId < 1);
+        boolean invalidSubjectMode = mode == PracticeMode.SUBJECT && topicId != null;
+        if (subject != PracticeSubject.MAT || (mode != PracticeMode.TOPIC && mode != PracticeMode.SUBJECT)
+                || invalidTopicMode || invalidSubjectMode || difficulty == null
+                || page == null || page < 0 || topic != null) {
+            throw new IllegalArgumentException(
+                    "MAT practice requires practiceMode=SUBJECT or TOPIC, subject=MAT, "
+                            + "difficulty, and a non-negative page; topicId is required for TOPIC.");
         }
     }
 
@@ -228,7 +372,7 @@ public class PracticeAttemptService {
                 attempt.getSubmittedAt(), answers.stream()
                 .map(answer -> new PracticeAttemptResponse.AnswerResponse(
                         answer.getQuestionId(), answer.getSelectedOption(),
-                        answer.getCorrectOption(), answer.isCorrect()))
-                .toList());
+                        answer.getCorrectOption(), answer.isCorrect(), answer.getMatQuestionId()))
+                .toList(), attempt.getTopicId());
     }
 }

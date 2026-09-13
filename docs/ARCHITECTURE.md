@@ -1,5 +1,12 @@
 # Architecture
 
+MAT practice attempts use the existing practice-attempt APIs with
+`subject=MAT`, `practiceMode=TOPIC`, and a numeric `topicId` referencing
+`mat_topics.id`. MAT set resolution and answer identity remain independent of
+the generic Arithmetic `questions` hierarchy: MAT questions use
+`mat_questions.id`, while Arithmetic continues using its existing
+`questions.id` references.
+
 ## Update log
 - 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
 - 2026-09-04: Added disabled-by-default, read-only Google Drive service-account integration for future stream-based Excel readers.

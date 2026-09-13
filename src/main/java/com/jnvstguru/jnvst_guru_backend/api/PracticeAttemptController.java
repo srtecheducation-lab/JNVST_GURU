@@ -31,8 +31,9 @@ public class PracticeAttemptController {
             @RequestParam PracticeMode practiceMode,
             @RequestParam PracticeSubject subject,
             @RequestParam(required = false) ArithmeticQuestionEnums.QuestionType topic,
+            @RequestParam(required = false) Long topicId,
             @RequestParam ArithmeticQuestionEnums.Difficulty difficulty) {
-        return ResponseEntity.ok(service.getStatus(authUserId(authentication), practiceMode, subject, topic, difficulty));
+        return ResponseEntity.ok(service.getStatus(authUserId(authentication), practiceMode, subject, topic, difficulty, topicId));
     }
 
     @GetMapping("/latest")
@@ -41,9 +42,10 @@ public class PracticeAttemptController {
             @RequestParam PracticeMode practiceMode,
             @RequestParam PracticeSubject subject,
             @RequestParam(required = false) ArithmeticQuestionEnums.QuestionType topic,
+            @RequestParam(required = false) Long topicId,
             @RequestParam ArithmeticQuestionEnums.Difficulty difficulty,
             @RequestParam Integer page) {
-        return ResponseEntity.ok(service.getLatest(authUserId(authentication), practiceMode, subject, topic, difficulty, page));
+        return ResponseEntity.ok(service.getLatest(authUserId(authentication), practiceMode, subject, topic, difficulty, page, topicId));
     }
 
     private UUID authUserId(Authentication authentication) {

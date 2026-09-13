@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface PracticeAttemptAnswerRepository extends JpaRepository<PracticeAttemptAnswerEntity, Long> {
     List<PracticeAttemptAnswerEntity> findByAttemptOrderByQuestionId(PracticeAttemptEntity attempt);
+    List<PracticeAttemptAnswerEntity> findByAttemptOrderById(PracticeAttemptEntity attempt);
 }
