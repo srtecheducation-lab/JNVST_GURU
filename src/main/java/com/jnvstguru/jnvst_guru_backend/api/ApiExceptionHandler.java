@@ -15,6 +15,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.OffsetDateTime;
@@ -119,6 +120,19 @@ public class ApiExceptionHandler {
         error.put("status", HttpStatus.BAD_REQUEST.value());
         error.put("error", "Bad request");
         error.put("message", "Invalid value for request parameter: " + ex.getName());
+        return ResponseEntity.badRequest().body(error);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<Map<String, Object>> handleMissingRequestParameter(
+            MissingServletRequestParameterException ex, HttpServletRequest request) {
+        log.warn("[ERROR] Missing request parameter for path={} parameter={}",
+                request.getRequestURI(), ex.getParameterName());
+        Map<String, Object> error = new LinkedHashMap<>();
+        error.put("timestamp", OffsetDateTime.now());
+        error.put("status", HttpStatus.BAD_REQUEST.value());
+        error.put("error", "Bad request");
+        error.put("message", "Required request parameter is missing: " + ex.getParameterName());
         return ResponseEntity.badRequest().body(error);
     }
 

@@ -5,8 +5,23 @@
 - 2026-08-30: Added documentation references and clarified the decision log structure so new technical choices are easier to record.
 - 2026-08-30: Recorded the final database design decision set and confirmed the successful Flyway foundation migration state for the auth, user, and subscription schema.
 - 2026-09-09: Chose an independent image-based MAT question model and preserved the previous question-backed table as legacy data.
+- 2026-09-14: Chose independent Language practice identity and answer references for English and Bengali.
+- 2026-09-14: Made the shared practice-attempt difficulty column nullable for the no-difficulty Language subject.
+- 2026-09-14: Made page optional for practice-set status requests, defaulting to page zero.
 
 Status: Implemented foundational decisions, with future decisions added only when required.
+
+## BD-016: Independent Language practice attempts
+- Date: 2026-09-14
+- Decision: Extend the existing practice-attempt APIs with LANGUAGE SUBJECT attempts. Store the selected `language_code` on the attempt and reference exact `language_questions.id` values through a dedicated answer column.
+- Reason: English and Bengali are independent question sets, not translations of generic question IDs. Language has no difficulty dimension.
+- Consequences: Language latest-attempt lookup includes language and page; Arithmetic and MAT retain their existing source and validation paths.
+
+## BD-017: Nullable practice-attempt difficulty
+- Date: 2026-09-14
+- Decision: Keep one shared practice-attempt table and make `difficulty` nullable. Language attempts persist null; Arithmetic and MAT continue to require and store difficulty.
+- Reason: Language intentionally has no difficulty dimension, while preserving the existing attempt APIs and table is less disruptive than introducing a separate attempt table.
+- Consequences: Application validation remains subject-specific and existing Arithmetic/MAT records and writes are unchanged.
 
 ## Related documentation
 - [README.md](../README.md) — project overview and quick start

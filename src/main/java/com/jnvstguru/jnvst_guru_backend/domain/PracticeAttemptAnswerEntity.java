@@ -15,6 +15,8 @@ public class PracticeAttemptAnswerEntity {
     private Long questionId;
     @Column(name = "mat_question_id")
     private Long matQuestionId;
+    @Column(name = "language_question_id")
+    private Long languageQuestionId;
     @Enumerated(EnumType.STRING)
     @Column(name = "question_source", nullable = false, length = 20)
     private PracticeQuestionSource questionSource = PracticeQuestionSource.ARITHMETIC;
@@ -32,6 +34,8 @@ public class PracticeAttemptAnswerEntity {
     public void setQuestionId(Long questionId) { this.questionId = questionId; }
     public Long getMatQuestionId() { return matQuestionId; }
     public void setMatQuestionId(Long matQuestionId) { this.matQuestionId = matQuestionId; }
+    public Long getLanguageQuestionId() { return languageQuestionId; }
+    public void setLanguageQuestionId(Long languageQuestionId) { this.languageQuestionId = languageQuestionId; }
     public PracticeQuestionSource getQuestionSource() { return questionSource; }
     public void setQuestionSource(PracticeQuestionSource questionSource) { this.questionSource = questionSource; }
     public String getSelectedOption() { return selectedOption; }

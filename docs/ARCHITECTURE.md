@@ -10,6 +10,9 @@ using its existing `questions.id` references.
 
 ## Update log
 - 2026-09-13: Added the transactional Google Drive Language CSV importer and V19 no-difficulty schema adjustment.
+- 2026-09-14: Added independent English/Bengali Language practice attempts to the existing attempt APIs.
+- 2026-09-14: Made practice-attempt difficulty nullable so Language attempts can persist without a difficulty.
+- 2026-09-14: Made practice-set status page optional with page zero as the default.
 - 2026-09-13: Changed student Language retrieval to passage pagination with nested active questions and no required batch parameter.
 - 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
 - 2026-09-04: Added disabled-by-default, read-only Google Drive service-account integration for future stream-based Excel readers.
@@ -71,7 +74,7 @@ The major modules now in active use are auth, student profile, reference data, A
 ## Current constraints
 - Authentication is intentionally externalized to Supabase Auth; this backend does not implement password authentication itself.
 - The backend is now operating as a JWT Resource Server with protected authenticated endpoints.
-- The core domain phase includes Student Profile, Arithmetic, independent MAT, independent Language retrieval/import, and practice-attempt functionality. Language practice attempts and payment domains remain outside the public API.
+- The core domain phase includes Student Profile, Arithmetic, independent MAT, independent Language retrieval/import and practice-attempt functionality. Payment domains remain outside the public API.
 - No event-driven or cloud-specific infrastructure is included beyond the Supabase authentication boundary.
 - Google Drive integration is infrastructure-only, read-only, and disabled unless explicitly enabled through deployment configuration.
 

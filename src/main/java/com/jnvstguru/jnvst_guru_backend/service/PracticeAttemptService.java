@@ -23,6 +23,7 @@ public class PracticeAttemptService {
     private final ArithmeticQuestionRepository questionRepository;
     private final MatQuestionRepository matQuestionRepository;
     private final MatQuestionExplanationRepository matQuestionExplanationRepository;
+    private final LanguageQuestionRepository languageQuestionRepository;
     private final PracticeAttemptRepository attemptRepository;
     private final PracticeAttemptAnswerRepository answerRepository;
     private final EntityManager entityManager;
@@ -32,6 +33,7 @@ public class PracticeAttemptService {
                                   ArithmeticQuestionRepository questionRepository,
                                   MatQuestionRepository matQuestionRepository,
                                   MatQuestionExplanationRepository matQuestionExplanationRepository,
+                                  LanguageQuestionRepository languageQuestionRepository,
                                   PracticeAttemptRepository attemptRepository,
                                   PracticeAttemptAnswerRepository answerRepository,
                                   EntityManager entityManager) {
@@ -39,6 +41,7 @@ public class PracticeAttemptService {
         this.questionRepository = questionRepository;
         this.matQuestionRepository = matQuestionRepository;
         this.matQuestionExplanationRepository = matQuestionExplanationRepository;
+        this.languageQuestionRepository = languageQuestionRepository;
         this.attemptRepository = attemptRepository;
         this.answerRepository = answerRepository;
         this.entityManager = entityManager;
@@ -49,13 +52,16 @@ public class PracticeAttemptService {
                                   PracticeAttemptRepository attemptRepository,
                                   PracticeAttemptAnswerRepository answerRepository,
                                   EntityManager entityManager) {
-        this(applicationUserService, questionRepository, null, null, attemptRepository, answerRepository, entityManager);
+        this(applicationUserService, questionRepository, null, null, null, attemptRepository, answerRepository, entityManager);
     }
 
     @Transactional
     public PracticeAttemptResponse submit(UUID authUserId, PracticeAttemptRequest request) {
         if (request.subject() == PracticeSubject.MAT) {
             return submitMat(authUserId, request);
+        }
+        if (request.subject() == PracticeSubject.LANGUAGE) {
+            return submitLanguage(authUserId, request);
         }
         validateSelection(request.practiceMode(), request.subject(), request.topic(),
                 request.difficulty(), request.page());
@@ -95,6 +101,53 @@ public class PracticeAttemptService {
             PracticeAttemptAnswerEntity answer = new PracticeAttemptAnswerEntity();
             answer.setAttempt(attempt);
             answer.setQuestionId(question.getQuestionId());
+            answer.setSelectedOption(selected);
+            answer.setCorrectOption(question.getCorrectOption());
+            answer.setCorrect(isCorrect);
+            answers.add(answer);
+        }
+        attempt.setScore(correct);
+        attempt.setCorrectCount(correct);
+        attempt.setUnansweredCount(unanswered);
+        attempt.setWrongCount(questions.size() - correct - unanswered);
+        PracticeAttemptEntity saved = attemptRepository.save(attempt);
+        saveAnswersBulk(saved.getId(), answers);
+        return toResponse(saved, answers);
+    }
+
+    private PracticeAttemptResponse submitLanguage(UUID authUserId, PracticeAttemptRequest request) {
+        validateLanguageSelection(request);
+        UserEntity user = applicationUserService.findByAuthUserId(authUserId);
+        Map<Long, PracticeAttemptRequest.AnswerRequest> submitted = normalizeAnswers(request.answers());
+        Page<LanguageQuestionIndependentEntity> page =
+                languageQuestionRepository.findByLanguageCodeAndActiveTrueOrderByBatchNoAscQuestionNumberAscIdAsc(
+                        request.language().code(), PageRequest.of(request.page(), SET_SIZE));
+        List<LanguageQuestionIndependentEntity> questions = page.getContent();
+        Set<Long> questionIds = questions.stream().map(LanguageQuestionIndependentEntity::getId).collect(Collectors.toSet());
+        if (!questionIds.containsAll(submitted.keySet())) {
+            throw new IllegalArgumentException("One or more submitted LANGUAGE question IDs do not belong to this practice set.");
+        }
+
+        PracticeAttemptEntity attempt = new PracticeAttemptEntity();
+        attempt.setUser(user);
+        attempt.setPracticeMode(PracticeMode.SUBJECT);
+        attempt.setSubject(PracticeSubject.LANGUAGE);
+        attempt.setLanguageCode(request.language().code());
+        attempt.setPageNumber(request.page());
+        attempt.setQuestionCount(questions.size());
+        List<PracticeAttemptAnswerEntity> answers = new ArrayList<>();
+        int correct = 0;
+        int unanswered = 0;
+        for (LanguageQuestionIndependentEntity question : questions) {
+            PracticeAttemptRequest.AnswerRequest submittedAnswer = submitted.get(question.getId());
+            String selected = submittedAnswer == null ? null : normalizeOption(submittedAnswer.selectedOption());
+            boolean isCorrect = selected != null && selected.equals(question.getCorrectOption());
+            if (selected == null) unanswered++;
+            else if (isCorrect) correct++;
+            PracticeAttemptAnswerEntity answer = new PracticeAttemptAnswerEntity();
+            answer.setAttempt(attempt);
+            answer.setQuestionSource(PracticeQuestionSource.LANGUAGE);
+            answer.setLanguageQuestionId(question.getId());
             answer.setSelectedOption(selected);
             answer.setCorrectOption(question.getCorrectOption());
             answer.setCorrect(isCorrect);
@@ -165,17 +218,18 @@ public class PracticeAttemptService {
         }
         String values = java.util.stream.IntStream.range(0, answers.size())
                 .mapToObj(i -> "(:attempt" + i + ", :question" + i + ", :matQuestion" + i
-                        + ", :source" + i + ", :selected" + i + ", :correct" + i + ", :isCorrect" + i + ")")
+                        + ", :languageQuestion" + i + ", :source" + i + ", :selected" + i + ", :correct" + i + ", :isCorrect" + i + ")")
                 .collect(Collectors.joining(", "));
         var query = entityManager.createNativeQuery("""
                 insert into application.practice_attempt_answers
-                    (attempt_id, question_id, mat_question_id, question_source, selected_option, correct_option, is_correct)
+                    (attempt_id, question_id, mat_question_id, language_question_id, question_source, selected_option, correct_option, is_correct)
                 values """ + values);
         for (int i = 0; i < answers.size(); i++) {
             PracticeAttemptAnswerEntity answer = answers.get(i);
             query.setParameter("attempt" + i, attemptId);
             query.setParameter("question" + i, answer.getQuestionId());
             query.setParameter("matQuestion" + i, answer.getMatQuestionId());
+            query.setParameter("languageQuestion" + i, answer.getLanguageQuestionId());
             query.setParameter("source" + i, answer.getQuestionSource().name());
             query.setParameter("selected" + i, answer.getSelectedOption());
             query.setParameter("correct" + i, answer.getCorrectOption());
@@ -188,8 +242,25 @@ public class PracticeAttemptService {
     public PracticeStatusResponse getStatus(UUID authUserId, PracticeMode mode, PracticeSubject subject,
                                             ArithmeticQuestionEnums.QuestionType topic,
                                             ArithmeticQuestionEnums.Difficulty difficulty, Long topicId) {
+        return getStatus(authUserId, mode, subject, topic, difficulty, topicId, null, 0);
+    }
+
+    public PracticeStatusResponse getStatus(UUID authUserId, PracticeMode mode, PracticeSubject subject,
+                                            ArithmeticQuestionEnums.QuestionType topic,
+                                            ArithmeticQuestionEnums.Difficulty difficulty, Long topicId,
+                                            LanguageCode language, Integer requestedPage) {
+        if (subject == PracticeSubject.LANGUAGE) {
+            validateLanguageSelection(mode, subject, topic, difficulty,
+                    requestedPage == null ? 0 : requestedPage, language);
+            UserEntity user = applicationUserService.findByAuthUserId(authUserId);
+            long total = languageQuestionRepository.countByLanguageCodeAndActiveTrue(language.code());
+            Set<Integer> completed = new HashSet<>(attemptRepository.findCompletedLanguagePages(
+                    user, mode, subject, language.code()));
+            return buildStatus(mode, subject, null, null, total, completed);
+        }
         if (subject == PracticeSubject.MAT) {
-            validateMatSelection(mode, subject, topicId, topic, difficulty, 0);
+            validateMatSelection(mode, subject, topicId, topic, difficulty,
+                    requestedPage == null ? 0 : requestedPage);
             UserEntity user = applicationUserService.findByAuthUserId(authUserId);
             long total;
             Set<Integer> completed;
@@ -205,7 +276,7 @@ public class PracticeAttemptService {
             return buildStatus(mode, subject, difficulty, topicId, total, completed);
         }
 
-        validateSelection(mode, subject, topic, difficulty, 0);
+        validateSelection(mode, subject, topic, difficulty, requestedPage == null ? 0 : requestedPage);
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
         long total = questionRepository.countActivePracticeQuestions(mode == PracticeMode.TOPIC ? topic : null, difficulty);
         Set<Integer> completed = new HashSet<>(attemptRepository.findCompletedPages(
@@ -223,13 +294,29 @@ public class PracticeAttemptService {
     public PracticeStatusResponse getStatus(UUID authUserId, PracticeMode mode, PracticeSubject subject,
                                             ArithmeticQuestionEnums.QuestionType topic,
                                             ArithmeticQuestionEnums.Difficulty difficulty) {
-        return getStatus(authUserId, mode, subject, topic, difficulty, null);
+        return getStatus(authUserId, mode, subject, topic, difficulty, null, null, 0);
     }
 
     @Transactional(readOnly = true)
     public PracticeAttemptResponse getLatest(UUID authUserId, PracticeMode mode, PracticeSubject subject,
                                              ArithmeticQuestionEnums.QuestionType topic,
                                              ArithmeticQuestionEnums.Difficulty difficulty, Integer page, Long topicId) {
+        return getLatest(authUserId, mode, subject, topic, difficulty, page, topicId, null);
+    }
+
+    public PracticeAttemptResponse getLatest(UUID authUserId, PracticeMode mode, PracticeSubject subject,
+                                             ArithmeticQuestionEnums.QuestionType topic,
+                                             ArithmeticQuestionEnums.Difficulty difficulty, Integer page,
+                                             Long topicId, LanguageCode language) {
+        if (subject == PracticeSubject.LANGUAGE) {
+            validateLanguageSelection(mode, subject, topic, difficulty, page, language);
+            UserEntity user = applicationUserService.findByAuthUserId(authUserId);
+            PracticeAttemptEntity attempt = attemptRepository
+                    .findFirstByUserAndPracticeModeAndSubjectAndLanguageCodeAndPageNumberOrderBySubmittedAtDescIdDesc(
+                            user, mode, subject, language.code(), page);
+            if (attempt == null) throw new PracticeAttemptNotFoundException();
+            return toResponse(attempt, answerRepository.findByAttemptOrderById(attempt));
+        }
         if (subject == PracticeSubject.MAT) {
             validateMatSelection(mode, subject, topicId, topic, difficulty, page);
             UserEntity user = applicationUserService.findByAuthUserId(authUserId);
@@ -249,7 +336,6 @@ public class PracticeAttemptService {
             Map<Long, String> explanations = loadExplanations(answers, languageCode);
             return toResponse(attempt, answers, explanations);
         }
-
         validateSelection(mode, subject, topic, difficulty, page);
         UserEntity user = applicationUserService.findByAuthUserId(authUserId);
         PracticeAttemptEntity attempt = attemptRepository
@@ -353,6 +439,25 @@ public class PracticeAttemptService {
         }
     }
 
+    private void validateLanguageSelection(PracticeAttemptRequest request) {
+        validateLanguageSelection(request.practiceMode(), request.subject(), request.topic(),
+                request.difficulty(), request.page(), request.language());
+    }
+
+    private void validateLanguageSelection(PracticeMode mode, PracticeSubject subject,
+                                           ArithmeticQuestionEnums.QuestionType topic,
+                                           ArithmeticQuestionEnums.Difficulty difficulty,
+                                           Integer page, LanguageCode language) {
+        if (mode != PracticeMode.SUBJECT || subject != PracticeSubject.LANGUAGE
+                || language == null || (language != LanguageCode.ENGLISH && language != LanguageCode.BENGALI)
+                || topic != null || difficulty != null || page == null || page < 0) {
+            throw new IllegalArgumentException(
+                    "LANGUAGE practice requires practiceMode=SUBJECT, subject=LANGUAGE, "
+                            + "language=ENGLISH or BENGALI, no difficulty, and a non-negative page.");
+        }
+
+    }
+
     private void validateMatSelection(PracticeMode mode, PracticeSubject subject, Long topicId,
                                       ArithmeticQuestionEnums.QuestionType topic,
                                       ArithmeticQuestionEnums.Difficulty difficulty, Integer page) {
@@ -382,9 +487,10 @@ public class PracticeAttemptService {
                 attempt.getCorrectCount(), attempt.getWrongCount(), attempt.getUnansweredCount(),
                 attempt.getSubmittedAt(), answers.stream()
                 .map(answer -> new PracticeAttemptResponse.AnswerResponse(
-                        answer.getQuestionId(), answer.getSelectedOption(),
+                        answer.getQuestionId() != null ? answer.getQuestionId() : answer.getLanguageQuestionId(),
+                        answer.getSelectedOption(),
                         answer.getCorrectOption(), answer.isCorrect(), answer.getMatQuestionId(),
-                        explanations.get(answer.getMatQuestionId())))
+                        answer.getMatQuestionId() == null ? null : explanations.get(answer.getMatQuestionId())))
                 .toList(), attempt.getTopicId());
     }
 

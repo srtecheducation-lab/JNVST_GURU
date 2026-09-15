@@ -104,12 +104,15 @@ Authorization: Bearer <supabase-access-token>
 Returns the authenticated user's subscription history, including plan, lifecycle status, and start/end timestamps.
 
 ### Practice attempts
-Student-only endpoints use the exact combination of `practiceMode`, `subject`, the subject-specific topic field, `difficulty`, and `page`.
+Student-only practice-set endpoints use `practiceMode`, `subject`, and the
+subject-specific topic field. `page` is optional and defaults to `0`;
+`difficulty` is required for ARITHMETIC and MAT but omitted for LANGUAGE.
 
 ```http
 POST /api/v1/student/practice-attempts
 GET  /api/v1/student/practice-attempts?practiceMode=TOPIC&subject=ARITHMETIC&topic=FRACTION&difficulty=EASY
 GET  /api/v1/student/practice-attempts/latest?practiceMode=TOPIC&subject=ARITHMETIC&topic=FRACTION&difficulty=EASY&page=0
+GET  /api/v1/student/practice-attempts?practiceMode=SUBJECT&subject=LANGUAGE&language=ENGLISH&page=0
 ```
 
 Submission example:
@@ -147,6 +150,32 @@ profile `preferredLanguage`: `bn` selects Bengali, while `en`, null, blank, and
 unsupported values select English. There is no cross-language fallback. If the
 selected translation does not exist, the nullable field is omitted. Arithmetic
 latest responses retain their existing shape.
+
+Language practice is an independent subject and does not accept or send a
+difficulty. The persisted attempt therefore has `difficulty: null`.
+English and Bengali resolve separate active question sets from
+`language_questions`; their IDs are never translated or mapped across
+languages:
+
+```http
+POST /api/v1/student/practice-attempts
+GET  /api/v1/student/practice-attempts/latest?practiceMode=SUBJECT&subject=LANGUAGE&language=ENGLISH&page=0
+GET  /api/v1/student/practice-attempts/latest?practiceMode=SUBJECT&subject=LANGUAGE&language=BENGALI&page=0
+```
+
+```json
+{
+  "practiceMode": "SUBJECT",
+  "subject": "LANGUAGE",
+  "language": "ENGLISH",
+  "page": 0,
+  "answers": [{"questionId": 101, "selectedOption": "A"}]
+}
+```
+
+The submission stores every question in the selected language/page set,
+including unanswered questions with `selectedOption: null`, and scores against
+that independent Language question's `correctOption`.
 
 ### Student Profile
 #### Get current student profile

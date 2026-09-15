@@ -16,8 +16,13 @@ public interface LanguageQuestionRepository extends JpaRepository<LanguageQuesti
 
     long countByLanguageCodeAndBatchNoAndActiveTrue(String languageCode, String batchNo);
 
+    long countByLanguageCodeAndActiveTrue(String languageCode);
+
     List<LanguageQuestionIndependentEntity> findByLanguageCodeAndBatchNoAndActiveTrueOrderByQuestionNumberAscIdAsc(
             String languageCode, String batchNo);
+
+    Page<LanguageQuestionIndependentEntity> findByLanguageCodeAndActiveTrueOrderByBatchNoAscQuestionNumberAscIdAsc(
+            String languageCode, Pageable pageable);
 
     Optional<LanguageQuestionIndependentEntity> findByLanguageCodeAndBatchNoAndQuestionNumber(
             String languageCode, String batchNo, Integer questionNumber);

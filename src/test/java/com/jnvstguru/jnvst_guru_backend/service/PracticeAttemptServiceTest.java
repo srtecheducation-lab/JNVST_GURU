@@ -6,9 +6,10 @@ import com.jnvstguru.jnvst_guru_backend.repository.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
 
 import java.util.*;
-import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -22,6 +23,9 @@ class PracticeAttemptServiceTest {
     @Mock ArithmeticQuestionRepository questionRepository;
     @Mock PracticeAttemptRepository attemptRepository;
     @Mock PracticeAttemptAnswerRepository answerRepository;
+    @Mock LanguageQuestionRepository languageQuestionRepository;
+    @Mock EntityManager entityManager;
+    @Mock Query nativeQuery;
     @InjectMocks PracticeAttemptService service;
 
     private UserEntity user;
@@ -33,9 +37,10 @@ class PracticeAttemptServiceTest {
         user = new UserEntity();
         first = question(7L, "A");
         second = question(36L, "C");
-        when(userService.findByAuthUserId(AUTH_ID)).thenReturn(user);
-        when(questionRepository.findActivePracticeQuestions(any(), any(), any())).thenReturn(List.of(first, second));
-        when(attemptRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(userService.findByAuthUserId(AUTH_ID)).thenReturn(user);
+        lenient().when(questionRepository.findActivePracticeQuestions(any(), any(), any())).thenReturn(List.of(first, second));
+        lenient().when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery);
+        lenient().when(attemptRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -49,12 +54,7 @@ class PracticeAttemptServiceTest {
         assertEquals(1, result.correctCount());
         assertEquals(1, result.wrongCount());
         assertEquals(0, result.unansweredCount());
-        verify(answerRepository).saveAll(argThat(iterable -> {
-            List<PracticeAttemptAnswerEntity> list = StreamSupport.stream(iterable.spliterator(), false).toList();
-            return list.size() == 2
-                    && list.get(0).getCorrectOption().equals("A")
-                    && list.get(1).getCorrectOption().equals("C");
-        }));
+        verify(nativeQuery).executeUpdate();
     }
 
     @Test
@@ -93,6 +93,76 @@ class PracticeAttemptServiceTest {
     }
 
     @Test
+    void languageSubmissionUsesIndependentQuestionsAndStoresUnansweredAnswers() {
+        LanguageQuestionIndependentEntity englishFirst = languageQuestion(101L, "A");
+        LanguageQuestionIndependentEntity englishSecond = languageQuestion(102L, "C");
+        when(languageQuestionRepository.findByLanguageCodeAndActiveTrueOrderByBatchNoAscQuestionNumberAscIdAsc(
+                eq("en"), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(
+                        List.of(englishFirst, englishSecond)));
+        when(entityManager.createNativeQuery(anyString())).thenReturn(nativeQuery);
+
+        PracticeAttemptResponse result = service.submit(AUTH_ID, new PracticeAttemptRequest(
+                PracticeMode.SUBJECT, PracticeSubject.LANGUAGE, null, null, 0,
+                List.of(new PracticeAttemptRequest.AnswerRequest(101L, "A")),
+                null, LanguageCode.ENGLISH));
+
+        assertEquals(1, result.correctCount());
+        assertEquals(0, result.wrongCount());
+        assertEquals(1, result.unansweredCount());
+        assertEquals(List.of(101L, 102L), result.answers().stream()
+                .map(PracticeAttemptResponse.AnswerResponse::questionId).toList());
+        ArgumentCaptor<PracticeAttemptEntity> attemptCaptor = ArgumentCaptor.forClass(PracticeAttemptEntity.class);
+        verify(attemptRepository).save(attemptCaptor.capture());
+        assertNull(attemptCaptor.getValue().getDifficulty());
+        verify(nativeQuery).executeUpdate();
+    }
+
+    @Test
+    void languageRejectsDifficultyAndForeignQuestionIds() {
+        assertThrows(IllegalArgumentException.class, () -> service.submit(AUTH_ID, new PracticeAttemptRequest(
+                PracticeMode.SUBJECT, PracticeSubject.LANGUAGE, null,
+                ArithmeticQuestionEnums.Difficulty.EASY, 0, List.of(), null, LanguageCode.ENGLISH)));
+        LanguageQuestionIndependentEntity bengaliQuestion = languageQuestion(201L, "B");
+        when(languageQuestionRepository.findByLanguageCodeAndActiveTrueOrderByBatchNoAscQuestionNumberAscIdAsc(
+                eq("bn"), any())).thenReturn(new org.springframework.data.domain.PageImpl<>(
+                        List.of(bengaliQuestion)));
+        assertThrows(IllegalArgumentException.class, () -> service.submit(AUTH_ID, new PracticeAttemptRequest(
+                PracticeMode.SUBJECT, PracticeSubject.LANGUAGE, null, null, 0,
+                List.of(new PracticeAttemptRequest.AnswerRequest(999L, "A")),
+                null, LanguageCode.BENGALI)));
+    }
+
+    @Test
+    void languageStatusRequiresPageAndAcceptsEnglishAndBengaliWithoutDifficulty() {
+        when(languageQuestionRepository.countByLanguageCodeAndActiveTrue(anyString())).thenReturn(20L);
+        when(attemptRepository.findCompletedLanguagePages(eq(user), eq(PracticeMode.SUBJECT),
+                eq(PracticeSubject.LANGUAGE), anyString())).thenReturn(List.of());
+
+        PracticeStatusResponse english = service.getStatus(AUTH_ID, PracticeMode.SUBJECT,
+                PracticeSubject.LANGUAGE, null, null, null, LanguageCode.ENGLISH, 0);
+        PracticeStatusResponse bengali = service.getStatus(AUTH_ID, PracticeMode.SUBJECT,
+                PracticeSubject.LANGUAGE, null, null, null, LanguageCode.BENGALI, 1);
+
+        assertNull(english.difficulty());
+        assertEquals(1, english.sets().size());
+        assertNull(bengali.difficulty());
+        assertEquals(1, bengali.sets().size());
+        PracticeStatusResponse defaultPage = service.getStatus(AUTH_ID, PracticeMode.SUBJECT,
+                PracticeSubject.LANGUAGE, null, null, null, LanguageCode.ENGLISH, null);
+        assertEquals(1, defaultPage.sets().size());
+    }
+
+    @Test
+    void arithmeticAndMatStatusStillRequireDifficulty() {
+        assertThrows(IllegalArgumentException.class, () -> service.getStatus(AUTH_ID,
+                PracticeMode.SUBJECT, PracticeSubject.ARITHMETIC, null, null, null,
+                null, 0));
+        assertThrows(IllegalArgumentException.class, () -> service.getStatus(AUTH_ID,
+                PracticeMode.SUBJECT, PracticeSubject.MAT, null, null, null,
+                null, 0));
+    }
+
+    @Test
     void statusUsesExactSetAndLatestUsesLatestRepositoryQuery() {
         when(questionRepository.countActivePracticeQuestions(ArithmeticQuestionEnums.QuestionType.FRACTION,
                 ArithmeticQuestionEnums.Difficulty.EASY)).thenReturn(21L);
@@ -120,5 +190,12 @@ class PracticeAttemptServiceTest {
             public Long getQuestionId() { return id; }
             public String getCorrectOption() { return correct; }
         };
+    }
+
+    private LanguageQuestionIndependentEntity languageQuestion(Long id, String correct) {
+        LanguageQuestionIndependentEntity question = mock(LanguageQuestionIndependentEntity.class);
+        lenient().when(question.getId()).thenReturn(id);
+        lenient().when(question.getCorrectOption()).thenReturn(correct);
+        return question;
     }
 }

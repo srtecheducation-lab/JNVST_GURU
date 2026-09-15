@@ -2,6 +2,8 @@
 
 ## Update log
 - 2026-09-13: Added V20 to allow positive Language passage and question numbers beyond the original four-passage/20-question seed limits.
+- 2026-09-14: Added V21 Language practice-attempt identity and independent answer references.
+- 2026-09-14: Added V22 to allow null difficulty on Language practice attempts.
 - 2026-09-13: Added V19 to make Language question difficulty nullable because Language has no difficulty.
 - 2026-09-13: Added V18 independent Language passages and questions, with language-owned identities separate from the generic question hierarchy.
 - 2026-09-02: Updated the database status to match the applied Flyway V1-V7 migrations, including exam sessions, normalized state/district data, arithmetic questions, MAT/language support, and paper metadata.
@@ -51,10 +53,12 @@ The following Flyway migrations are present in the repository and are the source
 | V18 | Independent Language passages and questions per language and batch |
 | V19 | Remove the Language question difficulty requirement and update its ordering index |
 | V20 | Allow positive Language passage/question numbers beyond the original seed limits |
+| V21 | Add Language practice-attempt language identity and `language_questions` answer references |
+| V22 | Allow null difficulty for Language practice attempts |
 
 The applied schema is authoritative for the current backend. MAT is intentionally detached from `application.questions`: MAT questions are image-based and have their own identity/content model. The former question-backed table is retained as `application.mat_questions_legacy` so no existing rows are dropped. MAT topic metadata is localized in `mat_topic_translations`; question images are stored externally and only their URLs are persisted.
 
-Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Arithmetic attempts retain their existing `questions.id` answer reference. MAT attempts use `question_source = MAT` and `mat_question_id` referencing `mat_questions.id`; `topic_id` stores the MAT topic ID for TOPIC mode and is null for SUBJECT mode. Answer rows store both the selected option and the historical correct-option snapshot.
+Practice attempts are stored in `application.practice_attempts` and `application.practice_attempt_answers`. Attempts reference the authenticated application user, preserve the exact practice selection, and are append-only. Arithmetic attempts retain their existing `questions.id` answer reference. MAT attempts use `question_source = MAT` and `mat_question_id` referencing `mat_questions.id`; Language attempts use `question_source = LANGUAGE` and `language_question_id` referencing the independent `language_questions` table. Language attempts store `language_code` (`en` or `bn`), use SUBJECT mode, and do not store a difficulty. Answer rows store both the selected option and the historical correct-option snapshot.
 
 MAT explanations are stored separately in `application.mat_question_explanations`
 because MAT images and options are language-independent while explanations are
@@ -487,7 +491,7 @@ URLs are persisted.
 | subject | VARCHAR(40) NOT NULL | ARITHMETIC or MAT |
 | topic | VARCHAR(40) | Arithmetic topic; null for MAT |
 | topic_id | BIGINT | MAT topic; required for MAT TOPIC mode |
-| difficulty | VARCHAR(20) NOT NULL | Requested difficulty |
+| difficulty | VARCHAR(20) | Requested difficulty; null for Language attempts |
 | page_number | INTEGER NOT NULL | Zero-based set page |
 | question_count | INTEGER NOT NULL | Resolved set size |
 | score | INTEGER NOT NULL | Correct answers |
