@@ -29,6 +29,14 @@ The current scope remains intentionally narrow. It establishes the base applicat
 - Automated application and endpoint tests
 - Documentation structure under the `docs/` folder
 
+## Docker and Render deployment
+
+The repository includes a multi-stage [Dockerfile](Dockerfile) that builds the existing Spring Boot executable JAR with the Maven Wrapper and runs it in a Java 25 runtime image. [.dockerignore](.dockerignore) keeps source-control metadata, build output, logs, local configuration, and documentation out of the Docker build context while retaining the Maven and application files required for the build.
+
+The application uses `PORT` when it is supplied by Render and defaults to port `8080` for local development. The Dockerfile does not hard-code the production listening port; Render supplies `PORT` at runtime.
+
+Production configuration and secrets must be supplied through Render Environment Variables. In particular, the production database remains the existing Supabase PostgreSQL database using the Supabase Session Pooler connection approach. `local.properties` and `local/` remain local-only and are neither required by nor copied into the production image.
+
 ## Project goals
 - Provide a reliable backend base for the JNVST GURU platform
 - Keep the codebase understandable and modular from the start
@@ -64,6 +72,7 @@ export DB_PASSWORD=jnvst_guru_password
 - [docs/API.md](docs/API.md) — API contract and endpoint planning
 - [docs/DATABASE.md](docs/DATABASE.md) — database direction and schema planning
 - [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) — development workflow and prerequisites
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) — Docker and Render deployment preparation
 - [docs/DECISIONS.md](docs/DECISIONS.md) — major architectural decisions
 
 ## Current API
