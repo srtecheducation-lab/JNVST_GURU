@@ -21,6 +21,9 @@ runtime `PORT` environment variable, while local development continues to use
 port `8080` when `PORT` is not set. The Dockerfile does not provide a production
 port value.
 
+The Render web service binds Spring Boot to `0.0.0.0` so it accepts connections
+on the service network interface.
+
 ## Production configuration and secrets
 
 Production configuration is supplied through Render Environment Variables; no
