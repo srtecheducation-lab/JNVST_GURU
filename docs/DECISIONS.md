@@ -150,6 +150,12 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Reason: Batches may grow beyond the initial four-passage seed set, and later files must be importable without deleting or re-importing earlier passages.
 - Consequences: V20 removes the obsolete V18 upper-bound checks. Re-imports reuse existing passages and skip existing questions; new passage files import independently. Only English and Bengali filenames are recognized by this importer.
 
+## BD-020: Query preferred language by authenticated user ID
+- Date: 2026-09-17
+- Decision: MAT latest-review language selection reads `StudentProfileEntity.preferredLanguage` through a targeted repository query keyed by the authenticated user's ID.
+- Reason: The attempt's `UserEntity` may be detached when the latest-review flow resolves MAT explanations. Traversing its lazy `studentProfile` association caused `LazyInitializationException`.
+- Consequences: No entity fetch strategy changes are required, and MAT explanation language behavior remains unchanged. The lookup defaults to English for null/blank/unsupported values and selects Bengali only for `bn`.
+
 ## BD-018: Passage-oriented student Language retrieval
 - Date: 2026-09-13
 - Decision: The student Language endpoint paginates passages, not individual questions, and returns each selected passage with its active questions nested beneath it. `batchNo` is optional and active questions determine which passages are eligible.

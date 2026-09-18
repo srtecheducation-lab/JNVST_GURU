@@ -24,6 +24,7 @@ class PracticeAttemptServiceTest {
     @Mock PracticeAttemptRepository attemptRepository;
     @Mock PracticeAttemptAnswerRepository answerRepository;
     @Mock LanguageQuestionRepository languageQuestionRepository;
+    @Mock MatQuestionExplanationRepository matQuestionExplanationRepository;
     @Mock EntityManager entityManager;
     @Mock Query nativeQuery;
     @InjectMocks PracticeAttemptService service;
@@ -183,6 +184,32 @@ class PracticeAttemptServiceTest {
         when(answerRepository.findByAttemptOrderByQuestionId(latest)).thenReturn(List.of());
         assertNotNull(service.getLatest(AUTH_ID, PracticeMode.TOPIC, PracticeSubject.ARITHMETIC,
                 ArithmeticQuestionEnums.QuestionType.FRACTION, ArithmeticQuestionEnums.Difficulty.EASY, 0));
+    }
+
+    @Test
+    void matLatestResolvesPreferredLanguageWithoutLazyLoadingUserProfile() {
+        PracticeAttemptEntity latest = new PracticeAttemptEntity();
+        PracticeAttemptAnswerEntity answer = new PracticeAttemptAnswerEntity();
+        answer.setMatQuestionId(501L);
+        answer.setSelectedOption("A");
+        answer.setCorrectOption("B");
+        answer.setCorrect(false);
+
+        when(attemptRepository.findLatestMatSubject(eq(user), eq(PracticeMode.SUBJECT),
+                eq(PracticeSubject.MAT), eq(ArithmeticQuestionEnums.Difficulty.EASY), eq(0), any()))
+                .thenReturn(List.of(latest));
+        when(answerRepository.findByAttemptOrderById(latest)).thenReturn(List.of(answer));
+        when(userService.getPreferredLanguage(AUTH_ID)).thenReturn("bn");
+        when(matQuestionExplanationRepository.findByMatQuestionIdInAndLanguageCode(
+                eq(Set.of(501L)), eq("bn"))).thenReturn(List.of());
+
+        PracticeAttemptResponse response = service.getLatest(
+                AUTH_ID, PracticeMode.SUBJECT, PracticeSubject.MAT, null,
+                ArithmeticQuestionEnums.Difficulty.EASY, 0, null, LanguageCode.ENGLISH);
+
+        assertEquals(1, response.answers().size());
+        assertNull(response.answers().getFirst().explanation());
+        verify(userService).getPreferredLanguage(AUTH_ID);
     }
 
     private ArithmeticQuestionRepository.PracticeQuestionProjection question(Long id, String correct) {

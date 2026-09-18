@@ -332,7 +332,7 @@ public class PracticeAttemptService {
             }
             if (attempt == null) throw new PracticeAttemptNotFoundException();
             List<PracticeAttemptAnswerEntity> answers = answerRepository.findByAttemptOrderById(attempt);
-            String languageCode = preferredLanguageCode(attempt.getUser());
+            String languageCode = preferredLanguageCode(authUserId);
             Map<Long, String> explanations = loadExplanations(answers, languageCode);
             return toResponse(attempt, answers, explanations);
         }
@@ -510,13 +510,12 @@ public class PracticeAttemptService {
                         MatQuestionExplanationEntity::getExplanation));
     }
 
-    private String preferredLanguageCode(UserEntity user) {
-        StudentProfileEntity profile = user.getStudentProfile();
-        if (profile == null || profile.getPreferredLanguage() == null
-                || profile.getPreferredLanguage().isBlank()) {
+    private String preferredLanguageCode(UUID authUserId) {
+        String preferredLanguage = applicationUserService.getPreferredLanguage(authUserId);
+        if (preferredLanguage == null || preferredLanguage.isBlank()) {
             return "en";
         }
-        return profile.getPreferredLanguage().trim().toLowerCase(Locale.ROOT).equals("bn")
+        return preferredLanguage.trim().toLowerCase(Locale.ROOT).equals("bn")
                 ? "bn" : "en";
     }
 }

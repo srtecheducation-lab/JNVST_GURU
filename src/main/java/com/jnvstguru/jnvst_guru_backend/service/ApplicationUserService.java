@@ -134,6 +134,11 @@ public class ApplicationUserService {
     }
 
     @Transactional(readOnly = true)
+    public String getPreferredLanguage(UUID authUserId) {
+        return studentProfileRepository.findPreferredLanguageByAuthUserId(authUserId).orElse(null);
+    }
+
+    @Transactional(readOnly = true)
     public List<StateEntity> getActiveStates() {
         return stateRepository.findByStatusOrderByNameAsc("ACTIVE");
     }
