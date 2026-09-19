@@ -1,7 +1,7 @@
 ﻿# API
 
 ## Update log
-- 2026-09-13: Documented MAT subject/topic practice, latest-review explanations selected by student preferred language, and the current MAT import endpoints.
+- 2026-09-19: Made the existing authenticated MAT topics endpoint select translated names/descriptions from the student's preferred language, with English fallback.
 - 2026-09-02: Documented the working authenticated user flow, Student Profile API, reference data APIs, arithmetic CRUD/filter endpoints, and the current Flyway-backed schema additions.
 - 2026-09-02: Added the authenticated subscriptions endpoint to keep the API contract aligned with the implemented controller.
 - 2026-09-02: Added read-only question and paper endpoints for reusable question lookup, paper listing, and paper-question occurrences.
@@ -26,7 +26,7 @@ Status: Core foundation, authenticated identity, Student Profile, reference-stat
 MAT is independent from the generic `questions` API because its content is image-based.
 
 ```http
-GET    /api/v1/student/mat-topics?language=en
+GET    /api/v1/student/mat-topics
 GET    /api/v1/student/mat-questions?topicId=1
 GET    /api/v1/mat-questions?topicId=1&active=true
 POST   /api/v1/mat-questions
@@ -36,6 +36,12 @@ POST   /api/v1/admin/import/google-drive/mat
 ```
 
 MAT question requests contain `topicId`, one `questionImageUrl`, four option image URLs, `correctOption` (`A`-`D`), optional `difficulty`, `active`, and `sortOrder`. Student responses never expose `correctOption`; teacher/admin responses do. Image files remain in the configured external file store and only references/URLs are persisted. MAT explanations are not returned by these question endpoints.
+
+`GET /api/v1/student/mat-topics` is authenticated and selects `name` and
+`description` from `mat_topic_translations` using the authenticated student's
+`student_profiles.preferred_language`: `en` selects English and `bn` selects
+Bengali. Null, blank, and unsupported profile values fall back to English.
+Topic IDs, codes, and the existing `sort_order, id` ordering are unchanged.
 
 ## Versioning
 All API paths use the version prefix:

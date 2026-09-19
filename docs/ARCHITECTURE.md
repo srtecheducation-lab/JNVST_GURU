@@ -15,6 +15,7 @@ using its existing `questions.id` references.
 - 2026-09-14: Made practice-set status page optional with page zero as the default.
 - 2026-09-13: Changed student Language retrieval to passage pagination with nested active questions and no required batch parameter.
 - 2026-09-17: MAT latest-review language resolution now uses a targeted preferred-language query by authenticated user ID, avoiding lazy profile traversal outside a persistence session.
+- 2026-09-19: The existing authenticated MAT topics endpoint now resolves translated topic names/descriptions from the student's preferred language, with English fallback and stable topic ordering.
 - 2026-09-02: Confirmed the working Supabase JWT resource-server flow, including issuer/JWKS validation and the authenticated `/api/v1/me` endpoint returning the current user and role data.
 - 2026-09-04: Added disabled-by-default, read-only Google Drive service-account integration for future stream-based Excel readers.
 - 2026-09-07: Added the student practice-attempt module with server-side set resolution and historical answer snapshots.
@@ -54,7 +55,7 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - Google Drive access is isolated in `GoogleDriveService`; it downloads private files by `fileId` into an `InputStream` and is not connected to persistence or import logic.
 - The Language Google Drive importer lists direct batch-folder children, validates recognized CSVs, and writes each file in its own transaction to the independent Language tables. It does not upload text to storage and does not modify Arithmetic or MAT importers.
 - Student Language retrieval paginates `language_passages` by passage and batch-loads active `language_questions`, returning five-question passage groups in deterministic order. No batch-selection mechanism beyond the existing active-question flag is introduced.
-- MAT latest-review responses resolve the student's preferred language through `StudentProfileRepository` while the persistence session is active; they do not initialize `UserEntity.studentProfile` from a detached attempt user.
+- MAT student topic and latest-review responses resolve the student's preferred language through the targeted `StudentProfileRepository` lookup while the persistence session is active; they do not initialize `UserEntity.studentProfile` from a detached entity. Topic translation remains a single repository projection query with stable `sort_order, id` ordering.
 - Student Progress is a read-only repository aggregation over append-only practice attempts. It selects the latest attempt for each unique practice-set identity for progress totals, while recent attempts retain every historical submission. No separate progress table is used.
 
 ## Architectural principles

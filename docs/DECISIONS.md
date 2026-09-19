@@ -8,8 +8,15 @@
 - 2026-09-14: Chose independent Language practice identity and answer references for English and Bengali.
 - 2026-09-14: Made the shared practice-attempt difficulty column nullable for the no-difficulty Language subject.
 - 2026-09-14: Made page optional for practice-set status requests, defaulting to page zero.
+- 2026-09-19: Made the existing authenticated MAT topics endpoint language-aware without changing its path or response contract.
 
 Status: Implemented foundational decisions, with future decisions added only when required.
+
+## BD-018: Preferred-language MAT topic translations
+- Date: 2026-09-19
+- Decision: Keep `GET /api/v1/student/mat-topics` as the sole MAT topic endpoint and select translated `name`/`description` using the authenticated student's profile language. Only `en` and `bn` are supported; null, blank, and unsupported values use English.
+- Reason: Topic identity and ordering must remain stable while the existing student experience follows the profile preference. The targeted profile lookup and one projection query avoid entity graph traversal and N+1 translation queries.
+- Consequences: The endpoint no longer accepts a caller-selected language; `mat_topics`, `mat_topic_translations`, MAT questions, and the response fields remain unchanged.
 
 ## BD-016: Independent Language practice attempts
 - Date: 2026-09-14

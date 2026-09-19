@@ -5,6 +5,8 @@ import com.jnvstguru.jnvst_guru_backend.domain.MatQuestionEntity;
 import com.jnvstguru.jnvst_guru_backend.domain.MatTopicEntity;
 import com.jnvstguru.jnvst_guru_backend.repository.MatQuestionRepository;
 import com.jnvstguru.jnvst_guru_backend.repository.MatTopicRepository;
+import java.util.Locale;
+import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -14,10 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class MatQuestionService {
     private final MatQuestionRepository questions;
     private final MatTopicRepository topics;
+    private final ApplicationUserService applicationUserService;
 
-    public MatQuestionService(MatQuestionRepository questions, MatTopicRepository topics) {
+    public MatQuestionService(MatQuestionRepository questions, MatTopicRepository topics,
+                              ApplicationUserService applicationUserService) {
         this.questions = questions;
         this.topics = topics;
+        this.applicationUserService = applicationUserService;
     }
 
     @Transactional(readOnly = true)
@@ -39,9 +44,10 @@ public class MatQuestionService {
     }
 
     @Transactional(readOnly = true)
-    public Page<MatTopicResponse> studentTopics(String language, Pageable pageable) {
+    public Page<MatTopicResponse> studentTopics(UUID authUserId, Pageable pageable) {
         validatePage(pageable);
-        String selectedLanguage = language == null || language.isBlank() ? "en" : language.trim().toLowerCase();
+        String preferredLanguage = applicationUserService.getPreferredLanguage(authUserId);
+        String selectedLanguage = normalizeStudentLanguage(preferredLanguage);
         return topics.findActiveStudentTopics(selectedLanguage, pageable)
                 .map(t -> new MatTopicResponse(t.getId(), t.getCode(), t.getSortOrder(), t.getName(), t.getDescription()));
     }
@@ -114,5 +120,13 @@ public class MatQuestionService {
         if (pageable.getPageNumber() < 0 || pageable.getPageSize() > 100) {
             throw new IllegalArgumentException("page must be non-negative and size must not exceed 100");
         }
+    }
+
+    private String normalizeStudentLanguage(String preferredLanguage) {
+        if (preferredLanguage == null || preferredLanguage.isBlank()) {
+            return "en";
+        }
+        String normalized = preferredLanguage.trim().toLowerCase(Locale.ROOT);
+        return normalized.equals("bn") ? "bn" : "en";
     }
 }

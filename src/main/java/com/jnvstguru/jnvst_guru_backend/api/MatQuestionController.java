@@ -3,12 +3,17 @@ package com.jnvstguru.jnvst_guru_backend.api;
 import com.jnvstguru.jnvst_guru_backend.api.dto.*;
 import com.jnvstguru.jnvst_guru_backend.service.MatQuestionService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -18,9 +23,12 @@ public class MatQuestionController {
 
     @GetMapping("/student/mat-topics")
     public Page<MatTopicResponse> studentTopics(
-            @RequestParam(required = false, defaultValue = "en") String language,
+            Authentication authentication,
             @PageableDefault(size = 20) Pageable pageable) {
-        return service.studentTopics(language, pageable);
+        JwtAuthenticationToken token = (JwtAuthenticationToken) authentication;
+        Jwt jwt = token.getToken();
+        UUID authUserId = UUID.fromString(jwt.getSubject());
+        return service.studentTopics(authUserId, pageable);
     }
 
     @GetMapping("/student/mat-questions")
