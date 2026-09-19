@@ -389,7 +389,7 @@ shared question identity; otherwise it reuses an exact normalized Bengali
 content hash or creates a new reusable question and paper occurrence.
 
 ### Student practice attempts
-The existing practice-attempt endpoints support both Arithmetic and MAT.
+The existing practice-attempt endpoints support Arithmetic, MAT, and Language.
 
 Arithmetic requests keep the existing `topic` question-type field. MAT requests
 use `subject=MAT` and `difficulty=EASY|MEDIUM|HARD`. Subject-wise MAT practice
@@ -449,9 +449,9 @@ passage-oriented:
 ```
 
 `correctOption` and `explanation` are never returned by this student test-fetch
-API. There is no language fallback or difficulty filter. Language
-practice-attempt endpoints are not currently defined; the existing
-practice-attempt API remains Arithmetic/MAT only.
+API. There is no language fallback or difficulty filter. Language submissions
+use the existing practice-attempt API with no difficulty and a stored language
+code.
 
 ### Google Drive Language import
 Admins can import available Language CSV files from a batch folder:
@@ -473,10 +473,30 @@ failed files, missing expected counterparts, and validation/database errors.
 Each CSV is validated and committed independently, so a failed file does not
 leave a partial passage or question set.
 
+### Student progress
+```http
+GET /api/v1/student/progress?recentPage=0&recentLimit=20
+```
+
+The authenticated endpoint returns `overall`, all three `subjects`, topic-only
+`topics`, and paginated `recentAttempts`. Overall, subject, and topic progress
+select only the latest submitted attempt for each unique practice set:
+
+```text
+practiceMode + subject + topic + topicId + difficulty
+    + languageCode + pageNumber
+```
+
+Repeated submissions remain append-only history but do not double-count
+progress. `recentAttempts` contains every submission, including repeats, in
+`submittedAt DESC, id DESC` order. Accuracy is
+`correct / questions * 100`, returned with two decimal places; zero questions
+returns `0.00`. Database language codes map `en` to `ENGLISH` and `bn` to
+`BENGALI`, with no fallback.
+
 ## Planned endpoints
 - Subject and topic catalog endpoints
 - Mock test endpoints
-- Student progress endpoints
 
 ## Database-only models currently present
 The following tables are present in the Flyway-backed schema without public

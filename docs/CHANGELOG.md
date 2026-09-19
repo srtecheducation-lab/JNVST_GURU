@@ -2,6 +2,12 @@
 
 This file records the documentation updates made while building the JNVST GURU backend foundation. Every significant change should be reflected here and in the relevant project markdown file.
 
+## 2026-09-19
+- Added the authenticated Student Progress endpoint.
+- Progress aggregates the latest submitted attempt for each unique practice set without double-counting repeated submissions.
+- Recent Attempts preserves the complete append-only submission history with pagination.
+- Confirmed that no progress table or Flyway migration is required.
+
 ## 2026-09-13
 - Documented MAT subject-wise and topic-wise practice-attempt flows.
 - Documented language-specific MAT explanations returned only by the existing latest-attempt review endpoint.
@@ -40,5 +46,5 @@ This file records the documentation updates made while building the JNVST GURU b
 ## Planned
 - Add language passage/question APIs.
 - Add subject/topic catalog APIs beyond the current MAT endpoints.
-- Add mock-test and student-progress APIs.
+- Add mock-test APIs.
 - Update this changelog whenever a significant implementation or documentation milestone is reached.

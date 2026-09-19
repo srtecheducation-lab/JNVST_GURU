@@ -114,6 +114,12 @@ Status: Implemented foundational decisions, with future decisions added only whe
 - Reason: Result, review, and progress must remain stable even when the question bank changes; completion is evaluated against the exact practice selection.
 - Consequences: Re-attempts are never updates, and latest-attempt lookup is explicitly separate from set-status lookup.
 
+## BD-018: Progress from latest attempt per practice set
+- Date: 2026-09-19
+- Decision: Calculate Student Progress from existing `practice_attempts` by selecting the latest submitted attempt for each user's unique practice-set identity before aggregating.
+- Reason: Repeated submissions must remain available as history without double-counting current performance.
+- Consequences: Overall, subject, and topic progress are deduplicated by `(practice_mode, subject, topic, topic_id, difficulty, language_code, page_number)` with `submitted_at DESC, id DESC` tie-breaking. Recent attempts deliberately use the unfiltered append-only history. No progress table or migration is introduced.
+
 ## BD-013: Independent MAT question identity
 - Date: 2026-09-09
 - Decision: MAT questions use `mat_questions.id` and must not create or reference rows in the generic `questions` table.

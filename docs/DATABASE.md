@@ -23,7 +23,7 @@
 - Database direction: PostgreSQL
 - Migration system: Flyway
 - Migration status: V1 through V19 are applied; V20 is the new migration required for Language passages beyond P004
-- Scope: Implemented database design for user access, subscriptions, state/district master data, Arithmetic question content, independent MAT question content, practice attempts, language explanations, and paper metadata
+- Scope: Implemented database design for user access, subscriptions, state/district master data, Arithmetic question content, independent MAT question content, practice attempts, language explanations, paper metadata, and read-only progress aggregation
 - Payment tables: intentionally excluded from implementation for now
 - Application schema: `application`
 - Flyway metadata schema: `public` by default unless explicitly overridden
@@ -500,9 +500,16 @@ URLs are persisted.
 | unanswered_count | INTEGER NOT NULL | Unanswered questions |
 | submitted_at | TIMESTAMPTZ NOT NULL | Submission timestamp |
 
-Attempts are append-only. Arithmetic SUBJECT/TOPIC attempts use the existing
+Attempts are append-only historical records. Arithmetic SUBJECT/TOPIC attempts use the existing
 `topic` enum field; MAT SUBJECT attempts have a null `topic_id`, while MAT
 TOPIC attempts store the selected MAT topic.
+
+Student Progress does not have a separate table. Its overall, subject, and
+topic totals select the latest attempt for each authenticated student's unique
+practice-set identity (`practice_mode`, `subject`, `topic`, `topic_id`,
+`difficulty`, `language_code`, and `page_number`) before aggregating the stored
+counts. Recent-attempt history intentionally includes every append-only
+submission, including repeated attempts.
 
 ### practice_attempt_answers
 | Column | Type | Notes |

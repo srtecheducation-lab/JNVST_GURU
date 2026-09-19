@@ -55,6 +55,7 @@ The backend currently follows a simple Spring Boot-based modular monolith struct
 - The Language Google Drive importer lists direct batch-folder children, validates recognized CSVs, and writes each file in its own transaction to the independent Language tables. It does not upload text to storage and does not modify Arithmetic or MAT importers.
 - Student Language retrieval paginates `language_passages` by passage and batch-loads active `language_questions`, returning five-question passage groups in deterministic order. No batch-selection mechanism beyond the existing active-question flag is introduced.
 - MAT latest-review responses resolve the student's preferred language through `StudentProfileRepository` while the persistence session is active; they do not initialize `UserEntity.studentProfile` from a detached attempt user.
+- Student Progress is a read-only repository aggregation over append-only practice attempts. It selects the latest attempt for each unique practice-set identity for progress totals, while recent attempts retain every historical submission. No separate progress table is used.
 
 ## Architectural principles
 - Keep modules logically separated.
@@ -71,7 +72,7 @@ The current structure includes:
 - `repository` for JPA repositories and technical adapters
 - `config` for application configuration
 
-The major modules now in active use are auth, student profile, reference data, Arithmetic and MAT question-bank handling, MAT import, and practice attempts.
+The major modules now in active use are auth, student profile, reference data, Arithmetic and MAT question-bank handling, MAT import, practice attempts, and student progress.
 
 ## Current constraints
 - Authentication is intentionally externalized to Supabase Auth; this backend does not implement password authentication itself.
